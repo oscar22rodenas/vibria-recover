@@ -7,7 +7,8 @@ import {
     getCategoriesInfo, 
     getRRSSInfo,
     getOfertaDetalladaInfo,
-    getExperienciaDetalladaInfo
+    getExperienciaDetalladaInfo,
+    getCategoriesHeaderInfo
 } from "@wp/index.js";
 import Layout from "@layouts/Layout.astro";
 import OfertaDetallada from "@components/pages/OfertaDetallada.astro";
@@ -23,11 +24,12 @@ export async function getStaticPaths() {
     // PASO 1: FETCHEAR DATOS GLOBALES (igual que antes)
     // ============================================
     const globalDataPromises = languages.map(async (lang) => {
-        const [rawHeaderACF, rawFooterACF, categories, rrssRaw] = await Promise.all([
+        const [rawHeaderACF, rawFooterACF, categories, rrssRaw, headerLinks] = await Promise.all([
             getPostsInfo("header", lang),
             getPostsInfo("footer", lang),
             getCategoriesInfo(lang),
-            getRRSSInfo()
+            getRRSSInfo(),
+            getCategoriesHeaderInfo(lang)
         ]);
         
         const headerACF = rawHeaderACF || {};
@@ -48,7 +50,7 @@ export async function getStaticPaths() {
         );
         
         const rrssWithImages = await Promise.all(
-            rrssRaw.map(async (red) => {
+            (rrssRaw || []).map(async (red) => {
                 if (red.imageId) {
                     const img = await getImageInfo(red.imageId);
                     return {
@@ -88,7 +90,8 @@ export async function getStaticPaths() {
                 }
             },
             categories,
-            rrss: rrssWithImages
+            rrss: rrssWithImages,
+            headerLinks
         };
     });
     

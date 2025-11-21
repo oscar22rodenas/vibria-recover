@@ -4,33 +4,44 @@ import LanguageSwitcher from "./LanguageSwitcher.astro";
 import RRSS from "@components/RRSS.astro";
 
 // ✅ Ya no hace fetchs, recibe todo por props
-const { headerData, categories, rrssData, currentCategory } = Astro.props;
+const { headerData, categories, rrssData, currentCategory, headerLinks = [] } = Astro.props;
 const { lang, slug } = Astro.params;
 
 const imageUrl = headerData.imageUrl || "";
 const imageAlt = headerData.imageAlt || "Logo Vibria";
 
+// Separar los enlaces por tipo para fácil acceso
+const contacteLink = headerLinks.find(link => link.slug.includes('contacte'));
+const assessoriesLink = headerLinks.find(link => link.slug.includes('assessories'));
+const tiendaLink = headerLinks.find(link => link.slug.includes('tienda'));
+
+const currentPath = Astro.url.pathname;
+const isInAssessories = assessoriesLink && currentPath.includes(assessoriesLink.slug.replace(/^\//, ''));
+
 const lastSegment = slug?.toLowerCase() ?? "";
 
 const categoryColors = {
-  "La Víbria": { text: "text-secondary" },
-  "The Vibria": { text: "text-secondary" },
-  "Voluntariado Europeo": { text: "text-red" },
-  "Voluntariat Europeu": { text: "text-red" },
-  "European volunteering": { text: "text-red" },
-  "Erasmus+": { text: "text-blue" },
-  "Prácticas Internacionales": { text: "text-yellow" },
-  "Pràctiques Internacionals": { text: "text-yellow" },
-  "International practices": { text: "text-yellow" },
-  "Proyectos Internacionales": { text: "text-orange" },
-  "Projectes Internacionals": { text: "text-orange" },
-  "International Projects": { text: "text-orange" },
-  "Proyectos Locales": { text: "text-pink" },
-  "Projectes Locals": { text: "text-pink" },
-  "Local Projects": { text: "text-pink" },
+  "La Víbria": { text: "text-secondary", border: "border-secondary" },
+  "The Vibria": { text: "text-secondary", border: "border-secondary" },
+  "Voluntariado Europeo": { text: "text-red", border: "border-red" },
+  "Voluntariat Europeu": { text: "text-red", border: "border-red" },
+  "European volunteering": { text: "text-red", border: "border-red" },
+  "Erasmus+": { text: "text-blue", border: "border-blue" },
+  "Prácticas Internacionales": { text: "text-yellow", border: "border-yellow" },
+  "Pràctiques Internacionals": { text: "text-yellow", border: "border-yellow" },
+  "International practices": { text: "text-yellow", border: "border-yellow" },
+  "Proyectos Internacionales": { text: "text-orange", border: "border-orange" },
+  "Projectes Internacionals": { text: "text-orange", border: "border-orange" },
+  "International Projects": { text: "text-orange", border: "border-orange" },
+  "Proyectos Locales": { text: "text-pink", border: "border-pink" },
+  "Projectes Locals": { text: "text-pink", border: "border-pink" },
+  "Local Projects": { text: "text-pink", border: "border-pink" },
 };
 
-const currentCategoryColors = categoryColors[currentCategory] ?? { text: "" };
+const currentCategoryColors = categoryColors[currentCategory] ?? {
+  text: "",
+  border: "border-secondary",
+};
 
 const sectionsToRender = categories.parent?.length > 0
   ? categories.parent.map((parent) => ({
@@ -45,12 +56,12 @@ const sectionsToRender = categories.parent?.length > 0
 <div class="sticky top-0 z-30 md:hidden">
   <header class="flex items-center justify-between bg-primary px-4 py-2 z-10">
     <a id="menu-toggle" class="flex justify-start min-w-[90px] z-10 cursor-pointer">
-      <img src="/iconos/menu.svg" alt="Menu" class="w-[30px] h-[30px]" />
+      <img id=menu-icon src="/iconos/menu.svg" alt="Menu" class="w-8 h-8" />
       <span id="close-icon" class="hidden justify-center text-[2.5rem] text-white">×</span>
     </a>
 
     <a href={`/${lang}/home`} class="z-10">
-      <img src={imageUrl} alt={imageAlt} class="w-[60px] h-[60px]" />
+      {imageUrl && <img src={imageUrl} alt={imageAlt} class="w-[60px] h-[60px]" />}
     </a>
 
     <LanguageSwitcher currentLang={lang} class="z-10" />
@@ -62,9 +73,18 @@ const sectionsToRender = categories.parent?.length > 0
   >
     <div class="bg-yellow text-white text-center font-medium px-4 py-2">
       <div class="flex justify-between items-center">
-        <span class="text-lg text-start min-w-[90px] gap-1">Contacte</span>
-        <span class="px-4 py-1 border-2 border-white rounded-full font-bold tracking-wide">ASSESSORIES</span>
-        <span class="text-lg text-end min-w-[90px] gap-1">Tienda</span>
+        <a href={contacteLink?.slug || "#"} class="text-lg text-start min-w-[90px] gap-1">
+          {contacteLink?.title || "Contacte"}
+        </a>
+        <a
+          href={assessoriesLink?.slug || "#"}
+          class="px-4 py-1 border-2 border-white rounded-full font-bold tracking-wide"
+        >
+          {assessoriesLink?.title?.toUpperCase() || "ASSESSORIES"}
+        </a>
+        <a href={tiendaLink?.slug || "#"} class="text-lg text-end min-w-[90px] gap-1">
+          {tiendaLink?.title || "Tienda"}
+        </a>
       </div>
     </div>
     
@@ -115,17 +135,24 @@ const sectionsToRender = categories.parent?.length > 0
 <div class="hidden md:block md:sticky md:top-0 md:z-30">
   <header class="bg-[#058279] flex justify-between items-center px-6 py-4">
     <a class="flex flex-row items-center justify-center gap-4" href={`/${lang}/home`}>
-      <img src={imageUrl} alt={imageAlt} class="w-[80px] h-[80px]" />
+      {imageUrl && <img src={imageUrl} alt={imageAlt} class="w-[80px] h-[80px]" />}
       <p class="h3 font-800">La Víbria Intercultural</p>
     </a>
 
     <div class="flex items-center gap-2 lg:gap-4">
-      <a class="text-white text-base font-700 px-2 py-0.5 border border-white rounded-full" href="#">
-        Assessories
-      </a>
-      <a class="text-white text-base font-400 px-2 py-0.5" href="#">Contacte</a>
-      <a class="text-white text-base font-400 px-2 py-0.5" href="#">Tienda</a>
-      <LanguageSwitcher currentLang={lang} class="z-10" />
+        <a
+            class={`text-base font-700 px-2 py-0.5 border border-white rounded-full ${isInAssessories ? 'bg-white text-primary' : 'text-white bg-transparent'}`}
+            href={assessoriesLink?.slug || "#"}
+        >
+            {assessoriesLink?.title || "Assessories"}
+        </a>
+        <a class="text-white text-base font-400 px-2 py-0.5" href={contacteLink?.slug || "#"}>
+            {contacteLink?.title || "Contacte"}
+        </a>
+        <a class="text-white text-base font-400 px-2 py-0.5" href={tiendaLink?.slug || "#"}>
+            {tiendaLink?.title || "Tienda"}
+        </a>
+        <LanguageSwitcher currentLang={lang} class="z-10" />
     </div>
   </header>
 
