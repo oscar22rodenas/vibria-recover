@@ -9,13 +9,7 @@ const { rrssData } = Astro.props;
 <div class="flex flex-row justify-center items-center bg-primary p-2 gap-6 md:gap-4">
   {rrssData.map((red_social) => (
     <a href={red_social.link}>
-      {red_social.imageUrl && <Picture 
-        formats={['webp', 'avif', 'jpeg']} 
-        src={red_social.imageUrl} 
-        alt={red_social.imageAlt} 
-        width="30" 
-        height="30" 
-      />}
+      <img src={red_social.imageUrl} alt={red_social.imageAlt} class="w-[30px] h-[30px]" />
     </a>
   ))}
 </div>
