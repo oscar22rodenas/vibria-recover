@@ -2,53 +2,84 @@ import { apiURL } from "./config.js";
 import { categoriesCache } from './helpers.js';
 
 export async function getCategoriesInfo(lang) {
-    // ✅ Verificar cache
-    if (categoriesCache.has(lang)) {
-        return categoriesCache.get(lang);
-    }
-    
-    try {
-        const res = await fetch(
-            `${apiURL}/categories?per_page=100&_fields=id,name,slug,parent`
-        );
-        const categories = await res.json();
-        
-        // Filtrar por idioma y estructurar
-        const filteredCategories = categories.filter(cat => {
-            return cat.slug.endsWith(`-${lang}`) || !cat.slug.includes('-ca') && !cat.slug.includes('-es') && !cat.slug.includes('-en');
-        });
-        
-        const parent = filteredCategories.filter(cat => cat.parent === 0);
-        const children = {};
-        
-        filteredCategories.forEach(cat => {
-            if (cat.parent !== 0) {
-                if (!children[cat.parent]) {
-                    children[cat.parent] = [];
-                }
-                children[cat.parent].push({
-                    id: cat.id,
-                    title: cat.name,
-                    slug: cat.slug.replace(`-${lang}`, '')
-                });
-            }
-        });
-        
-        const result = {
-            parent: parent.map(cat => ({
-                id: cat.id,
-                title: cat.name,
-                slug: cat.slug.replace(`-${lang}`, '')
-            })),
-            children
-        };
-        
-        // ✅ Guardar en cache
-        categoriesCache.set(lang, result);
-        
-        return result;
-    } catch (error) {
-        console.error(`❌ Error fetching categories for ${lang}:`, error.message);
+  if (categoriesCache.has(lang)) {
+    return categoriesCache.get(lang);
+  }
+
+  try {
+    const response = await fetch(`${apiURL}/menu?page=1&orderby=date&order=asc&_fields=title,acf,slug,id&per_page=500`);
+    if (!response.ok) {
+        console.error(`❌ Error fetching menus: ${response.status} - ${response.statusText}`);
         return { parent: [], children: {} };
     }
+    const menus = await response.json();
+
+    if (!Array.isArray(menus)) {
+        console.warn(`⚠️ getCategoriesInfo: Expected an array from /menu, but received:`, menus);
+        return { parent: [], children: {} };
+    }
+
+    const filteredMenus = menus.filter(menu => menu.slug.includes(`-${lang}`));
+
+    const categoriesMap = {
+      parent: [],
+      children: {}
+    };
+
+    const allSubcategoryPromises = [];
+    const parentMenuMap = {};
+
+    for (const menu of filteredMenus) {
+      const categoryTitle = menu.acf?.categoria_titulo;
+      const subcategoryIds = menu.acf?.subcategorias || [];
+      
+      const parentData = {
+        id: menu.id,
+        title: categoryTitle,
+        slug: menu.slug.replace(/-(ca|es|en)$/, "")
+      };
+      categoriesMap.parent.push(parentData);
+      parentMenuMap[menu.id] = subcategoryIds;
+      
+      subcategoryIds.forEach(subId => {
+        const subPromise = fetch(`${apiURL}/subcategorias_menu/${subId}?_fields=acf,slug`)
+          .then(res => {
+            if (!res.ok) {
+              console.warn(`Subcategoría con ID ${subId} no encontrada (status: ${res.status})`);
+              return null;
+            }
+            return res.json();
+          })
+          .then(subcategory => {
+            if (!subcategory) return null;
+            return {
+              parentId: menu.id,
+              title: subcategory.acf?.subcategoria_titol || "Sin título",
+              slug: subcategory.slug.replace(/-(ca|es|en)$/, "")
+            };
+          })
+          .catch(error => {
+            console.error(`Error al obtener la subcategoría con ID ${subId}:`, error);
+            return null;
+          });
+        allSubcategoryPromises.push(subPromise);
+      });
+    }
+
+    const allSubcategories = (await Promise.all(allSubcategoryPromises)).filter(Boolean);
+
+    for (const sub of allSubcategories) {
+        if (!categoriesMap.children[sub.parentId]) {
+            categoriesMap.children[sub.parentId] = [];
+        }
+        categoriesMap.children[sub.parentId].push(sub);
+    }
+    
+    categoriesCache.set(lang, categoriesMap);
+    return categoriesMap;
+
+  } catch (error) {
+    console.error(`❌ Global error in getCategoriesInfo for ${lang}:`, error.message);
+    return { parent: [], children: {} };
+  }
 }
