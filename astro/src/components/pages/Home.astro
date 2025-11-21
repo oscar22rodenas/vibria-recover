@@ -6,11 +6,11 @@ import { Picture } from "astro:assets";
 // ✅ Ya no hace fetchs, solo recibe props
 const { pageData, typeSpecificData } = Astro.props;
 const { acf } = pageData;
-const { slides } = typeSpecificData;
+const { slides, difusionImagenes } = typeSpecificData;
 
 // Imagen de difusión ya resuelta en getStaticPaths
-const imageUrl = acf.difusion_imagen_url || "";
-const imageAlt = acf.difusion_imagen_alt || "Canal de difusión";
+const imageUrl = difusionImagenes?.source_url || "";
+const imageAlt = difusionImagenes?.alt_text || "Canal de difusión";
 
 const domain = import.meta.env.PUBLIC_WP_DOMAIN;
 ---

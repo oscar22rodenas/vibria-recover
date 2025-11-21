@@ -172,8 +172,9 @@ export async function getStaticPaths() {
             switch (baseSlug) {
                 case 'home': {
                     // Resolver slides con imágenes
+                    const difusionImagenes = await getImageInfo(page.acf.difusion_imagen);
                     const slidesRaw = await getSlidesInfo(lang);
-                    typeSpecificData = { slides: slidesRaw || [] };
+                    typeSpecificData = { slides: slidesRaw, difusionImagenes: difusionImagenes || [] };
                     break;
                 }
                 
