@@ -1,30 +1,26 @@
 ---
+// src/components/pages/Experiencies.astro
 import { Picture } from "astro:assets";
-import { getExperienciesInfo } from "@wp/index.js";
 import CategoryNav from "@components/CategoryNav.astro";
 import "@styles/experiencies-content.css";
 
+// ✅ Recibe datos ya resueltos
+const { pageData, typeSpecificData, globalData } = Astro.props;
+const experiencies = typeSpecificData.experiencies || [];
+const { categories } = globalData;
+
 const { lang, slug } = Astro.params;
-
-const slugCompleto = `${slug}-${lang}`;
-
-
-const experiencies = await getExperienciesInfo(lang, slugCompleto);
-
 const pin = Astro.url.searchParams.get("pin");
 
-// Filtrar las experiencias según el pin (si existe)
+// Filtrar experiencias según pin (lógica de cliente)
 const filteredExperiencies = pin
-  ? experiencies.filter((e) =>
-      e.pinVoluntariat === pin || e.pinPais === pin
-    )
-  : experiencies;
-
+    ? experiencies.filter(e => e.pinVoluntariat === pin || e.pinPais === pin)
+    : experiencies;
 ---
 
-<CategoryNav lang={lang} slug={slug} />
+<CategoryNav lang={lang} slug={slug} categories={categories} />
     
-<div class="experiencies-content md:mx-[15%]" set:html={filteredExperiencies[0]?.content}></div>
+<div class="experiencies-content md:mx-[15%]" set:html={pageData.content}></div>
 
 <div class="p-4 grid grid-cols-1 gap-5 md:grid-cols-2 md:mx-[15%]">
   {

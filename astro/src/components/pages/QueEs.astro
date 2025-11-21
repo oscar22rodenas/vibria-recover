@@ -1,15 +1,16 @@
 ---
 import CategoryNav from "@components/CategoryNav.astro";
 import "@styles/que-es-content.css";
-import { getQueEsInfo } from "@wp/getQueEsInfo";
+
+const { pageData, globalData } = Astro.props;
+const { content } = pageData;
+const { categories } = globalData;
 const { lang, slug } = Astro.params;
-const slugCompleto = `${slug}-${lang}`;
-const queEs = await getQueEsInfo(lang, slugCompleto);
 ---
 
-<CategoryNav lang={lang} slug={slug} />
+<CategoryNav lang={lang} slug={slug} categories={categories} />
 <article class="max-w-lg mx-auto bg-white p-4 space-y-4 flex md:mx-[15%]">
     
-  <div class="que-es-content" set:html={queEs.content}></div>
+  <div class="que-es-content" set:html={content}></div>
 
 </article>

@@ -1,52 +1,44 @@
 import { apiURL } from "./config.js";
 import { getImageInfo } from "./getImageInfo.js";
-import { getPageById } from "./getPageById.js";
 
-export const getSlidesInfo = async (lang) => {
-  try {
-    const response = await fetch(`${apiURL}/slides?order=asc&_fields=acf,slug`);
-    if (!response.ok) {
-      throw new Error("Error al obtener los slides");
-    }
-    const data = await response.json();
-
-    // Filtrar los slides según el idioma (usando el slug)
-    const slidesFiltrados = data.filter(slide => slide.slug.includes(`-${lang}`));
-
-    // Procesar los slides en paralelo
-    const slidesConDatos = await Promise.all(
-      slidesFiltrados.map(async (slide) => {
-        const { acf } = slide;
-
-        // Validar que `acf` exista antes de acceder a sus propiedades
-        if (!acf) {
-          console.warn(`Slide sin datos ACF: ${slide.slug}`);
-          return null;
-        }
-
-        // Obtener información de la imagen si está disponible
-        const imageData = acf.slide_imagen ? await getImageInfo(acf.slide_imagen) : null;
-
-        // Obtener información de la página asociada al botón
-        const pageData = acf.slide_boton_link ? await getPageById(acf.slide_boton_link) : null;
-
-        // Retornar el slide procesado
-        return {
-          title: acf.slide_titulo || "Sin título",
-          subtitle: acf.slide_subtitulo || "",
-          text: acf.slide_texto || "",
-          buttonText: acf.slide_boton_texto || "Más información",
-          buttonUrl: pageData ? `/${pageData.lang}/${pageData.baseSlug}` : "#",
-          imageUrl: imageData?.source_url || "",
-          imageAlt: imageData?.alt_text || "Slide image",
-        };
-      })
+export async function getSlidesInfo(lang) {
+    // Fetchear ACF de la página de slides
+    const res = await fetch(
+        `${apiURL}/pages?slug=home-${lang}&_fields=acf`
     );
-
-    // Filtrar slides nulos (en caso de errores)
-    return slidesConDatos.filter(slide => slide !== null);
-  } catch (error) {
-    console.error("Error obteniendo slides:", error);
-    return [];
-  }
-};
+    const [homeData] = await res.json();
+    
+    if (!homeData || !homeData.acf.slides) {
+        console.error(`❌ Slides not found for lang: ${lang}`);
+        return [];
+    }
+    
+    const slidesRaw = homeData.acf.slides;
+    
+    // ✅ PARALELIZAR: Resolver TODAS las imágenes de slides en paralelo
+    const slidesPromises = slidesRaw.map(async (slide) => {
+        let imageUrl = "";
+        
+        if (slide.imagen) {
+            try {
+                const imgData = await getImageInfo(slide.imagen);
+                imageUrl = imgData.source_url || "";
+            } catch (error) {
+                console.error(`❌ Error fetching slide image:`, error.message);
+            }
+        }
+        
+        return {
+            title: slide.titulo || "",
+            subtitle: slide.subtitulo || "",
+            text: slide.texto || "",
+            imageUrl,
+            buttonText: slide.boton_texto || "",
+            buttonUrl: slide.boton_url || "#"
+        };
+    });
+    
+    const slides = await Promise.all(slidesPromises);
+    
+    return slides;
+}

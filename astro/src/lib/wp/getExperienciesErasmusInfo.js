@@ -1,55 +1,66 @@
 import { apiURL } from "./config.js";
 import { getImageInfo } from "./getImageInfo.js";
-import { getPageById } from "./getPageById.js";
+import { extractLang } from "./extractLang.js"; // Assuming this is needed for filtering by language
 
-export const getExperienciesErasmusInfo = async (lang) => {
+export async function getExperienciesErasmusInfo(lang) {
   try {
     const response = await fetch(`${apiURL}/experiencies_erasmus?order=asc&_fields=acf,slug`);
+    
     if (!response.ok) {
-      throw new Error("Error al obtener las experiencies");
+      console.error(`❌ Error fetching experiencies_erasmus: ${response.status} - ${response.statusText}`);
+      return []; // Return empty array on fetch error
     }
+    
     const data = await response.json();
-    const responsePage = await fetch(`${apiURL}/pages?slug=erasmus-experiencies-${lang}&_fields=content`);
-    if (!responsePage.ok) {
-      throw new Error("Error al obtener la página");
+
+    // Ensure data is an array before filtering
+    if (!Array.isArray(data)) {
+        console.warn(`⚠️ getExperienciesErasmusInfo: Expected an array from API, but received:`, data);
+        return [];
     }
+
+    const responsePage = await fetch(`${apiURL}/pages?slug=erasmus-experiencies-${lang}&_fields=content`);
+    
+    if (!responsePage.ok) {
+      console.error(`❌ Error fetching erasmus-experiencies page for lang ${lang}: ${responsePage.status} - ${responsePage.statusText}`);
+      return []; // Return empty array on fetch error for the page content
+    }
+    
     const [pageDataInfo] = await responsePage.json();
 
-    // Filtrar los ofertes según el idioma (usando el slug)
-    const experienciaFiltrados = data.filter(experiencia => experiencia.slug.includes(`-${lang}`));
-
-    // Obtener las imágenes de cada oferta en paralelo
+    const experienciaFiltrados = data.filter(experiencia => {
+        const extracted = extractLang(experiencia.slug);
+        return extracted && extracted.lang === lang;
+    });
+    
     const experienciaConDatos = await Promise.all(
-
       experienciaFiltrados.map(async (experiencia) => {
         const { acf } = experiencia;
-        // Validar que `acf` exista antes de acceder a sus propiedades
         if (!acf) {
-          console.warn(`Oferta sin datos ACF: ${experiencia.slug}`);
+          console.warn(`Experiencia Erasmus sin datos ACF: ${experiencia.slug}`);
           return null;
         }
 
         const imageData = acf.experiencia_imagen ? await getImageInfo(acf.experiencia_imagen) : null;
-
-        const pageData = acf.experiencia_link ? await getPageById(acf.experiencia_link) : null;
+        const pageData = acf.experiencia_link ? await getPageById(acf.experiencia_link) : null; // Assuming getPageById exists and works
 
         return {
-          title: acf.experiencia_titulo,
-          text: acf.experiencia_texto,
-          ubicacion: acf.experiencia_ubicacion,
-          fechas: acf.experiencia_fechas,
-          dataLimit: acf.experiencia_data_limit,
+          title: acf.experiencia_titulo || "",
+          text: acf.experiencia_texto || "",
+          ubicacion: acf.experiencia_ubicacion || "",
+          fechas: acf.experiencia_fechas || "",
+          dataLimit: acf.experiencia_data_limit || "",
           link: pageData ? `/${pageData.lang}${pageData.categoriaSlug}/${pageData.baseSlug}` : "#",
           imageUrl: imageData?.source_url || "",
-          imageAlt: imageData?.alt_text || "oferta image",
-          content: pageDataInfo.content.rendered || "",
+          imageAlt: imageData?.alt_text || "Experiencia Erasmus image",
+          content: pageDataInfo?.content?.rendered || "",
         };
       })
-    );    
-
-    return experienciaConDatos;
-  } catch (error) {
-    console.error("Error obteniendo experiencias:", error);
+    );
+  return experienciaConDatos.filter(Boolean); // Filter out any nulls
+  } 
+  catch (error) {
+    console.error("❌ Global error in getExperienciesErasmusInfo:", error.message);
     return [];
   }
-};
+}

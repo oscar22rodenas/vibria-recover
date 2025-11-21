@@ -1,53 +1,47 @@
 ---
-import { getSlidesInfo } from "@wp/index.js";
-const { lang } = Astro.params;
+// astro/src/components/Slide.astro
 
-const slides = await getSlidesInfo(lang);
+// ✅ Recibe slides con imágenes ya resueltas
+const { slides } = Astro.props;
 ---
 
 <div id="slide-container" class="relative w-full min-h-[700px] overflow-hidden">
   <div id="slides" class="w-full h-full">
-    {
-      slides.map((slide, index) => (
-        <div
-          class={`slide absolute top-76 left-0 w-full min-h-[700px] flex justify-start transition-opacity duration-700 md:pl-16 xl:pl-32 ${index === 0 ? "opacity-100" : "opacity-0"}`}
-          data-index={index}
-          style={`background: linear-gradient(rgba(5, 130, 121, 0.6), rgba(5, 130, 121, 0.6)), url('${slide.imageUrl}') center/cover no-repeat;`}
-        >
-          <div class=" flex flex-col gap-3 items-start justify-center px-4 md:w-2/5">
-            
-            <h1 class="h1" style="text-shadow: 1.2px 1.2px 0px #FFC721;">
-              {slide.title}
-            </h1>
-            <h3 class="h3 font-800 md:text-[22px]">{slide.subtitle}</h3>
-            <p class="p md:text-[17px]">{slide.text}</p>
-            <a href={slide.buttonUrl} class="btn">
-              {slide.buttonText}
-            </a>
-          </div>
+    {slides.map((slide, index) => (
+      <div
+        class={`slide absolute top-76 left-0 w-full min-h-[700px] flex justify-start transition-opacity duration-700 md:pl-16 xl:pl-32 ${index === 0 ? "opacity-100" : "opacity-0"}`}
+        data-index={index}
+        style={`background: linear-gradient(rgba(5, 130, 121, 0.6), rgba(5, 130, 121, 0.6)), url('${slide.imageUrl}') center/cover no-repeat;`}
+      >
+        <div class=" flex flex-col gap-3 items-start justify-center px-4 md:w-2/5">
+          <h1 class="h1" style="text-shadow: 1.2px 1.2px 0px #FFC721;">
+            {slide.title}
+          </h1>
+          <h3 class="h3 font-800 md:text-[22px]">{slide.subtitle}</h3>
+          <p class="p md:text-[17px]">{slide.text}</p>
+          <a href={slide.buttonUrl} class="btn">
+            {slide.buttonText}
+          </a>
         </div>
-      ))
-    }
+      </div>
+    ))}
   </div>
 
-  <!-- Botones de navegación -->
   <div
     id="slide-buttons"
     class="relative z-20 flex flex-row justify-center items-center gap-4"
     style="top: 600px;"
   >
-    {
-      slides.map((_, index) => (
-        <button
-          class={`slide-button rounded-full transition-all ${
-            index === 0
-              ? "bg-yellow outline outline-2 outline-offset-3 outline-secondary  w-2 h-2"
-              : "bg-white w-3 h-3"
-          }`}
-          data-index={index}
-        />
-      ))
-    }
+    {slides.map((_, index) => (
+      <button
+        class={`slide-button rounded-full transition-all ${
+          index === 0
+            ? "bg-yellow outline outline-2 outline-offset-3 outline-secondary  w-2 h-2"
+            : "bg-white w-3 h-3"
+        }`}
+        data-index={index}
+      />
+    ))}
   </div>
 </div>
 
@@ -90,20 +84,17 @@ const slides = await getSlidesInfo(lang);
       showSlide(prevSlide);
     }
 
-    // Cambiar automáticamente cada 5 segundos
     let autoSlideInterval = setInterval(goToNextSlide, 5000);
 
-    // Botones manuales
     buttons.forEach((button) => {
       button.addEventListener("click", () => {
         const index = parseInt(button.dataset.index || "0");
         showSlide(index);
-        clearInterval(autoSlideInterval); // reiniciar si tocamos
+        clearInterval(autoSlideInterval);
         autoSlideInterval = setInterval(goToNextSlide, 5000);
       });
     });
 
-    // SWIPE: Detectar arrastre horizontal
     let touchStartX = 0;
     let touchEndX = 0;
 
@@ -120,13 +111,13 @@ const slides = await getSlidesInfo(lang);
 
     function handleSwipeGesture() {
       const distance = touchEndX - touchStartX;
-      const threshold = 50; // mínimo para considerar swipe
+      const threshold = 50;
 
       if (Math.abs(distance) > threshold) {
         if (distance < 0) {
-          goToNextSlide(); // swipe a la izquierda → siguiente
+          goToNextSlide();
         } else {
-          goToPrevSlide(); // swipe a la derecha → anterior
+          goToPrevSlide();
         }
         clearInterval(autoSlideInterval);
         autoSlideInterval = setInterval(goToNextSlide, 5000);
@@ -136,4 +127,3 @@ const slides = await getSlidesInfo(lang);
     showSlide(0);
   });
 </script>
-

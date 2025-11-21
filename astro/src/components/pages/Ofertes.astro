@@ -1,23 +1,25 @@
 ---
+// src/components/pages/Ofertes.astro
 import { Picture } from "astro:assets";
-import { getOfertesInfo} from "@wp/index.js";
 import CategoryNav from "@components/CategoryNav.astro";
+
+const { typeSpecificData, globalData, pageData } = Astro.props;
+const ofertas = typeSpecificData.ofertas || [];
+const { categories } = globalData;
 const { lang, slug } = Astro.params;
-
-const ofertes = await getOfertesInfo(lang);
-
 ---
-<CategoryNav lang={lang} slug={slug} />
 
-<div class="text-red text-center text-h2 font-700 py-8 md:font-800 md:text-3xl md:mx-[15%]" set:html={ofertes[0].content}></div>
+<CategoryNav lang={lang} slug={slug} categories={categories} />
+
+<div class="text-red text-center text-h2 font-700 py-8 md:font-800 md:text-3xl md:mx-[15%]" set:html={pageData.content}></div>
 
 <div class="p-6 grid grid-cols-1 gap-5 md:grid-cols-2 md:px-12 lg:px-16 xl:px-20 md:mx-[15%]">
   {
-    ofertes.map((oferta) => (
+    ofertas.map((oferta) => (
       
     <a href={oferta.link} class="flex flex-col justify-center items-center gap-2 mb-5 bg-gray-100 shadow-[0_4px_4px_rgba(0,0,0,0.25)] pt-4 pb-1">
       <div class="relative">
-        <Picture formats={['webp', 'avif', 'jpeg']} src={oferta.imageUrl} alt={oferta.imageAlt} width="300" height="126" style="md:width 390px"/>
+        {oferta.imageUrl && <Picture formats={['webp', 'avif', 'jpeg']} src={oferta.imageUrl} alt={oferta.imageAlt} width="300" height="126" style="md:width 390px"/>}
 
         <h4 class="absolute bottom-0 inset-x-16 text-h4 font-700 bg-red text-center text-white px-2">
           {oferta.title}

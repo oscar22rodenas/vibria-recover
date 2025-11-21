@@ -25,33 +25,232 @@ import RadioVibria from "@components/pages/RadioVibria.astro";
 import Refore from "@components/pages/Refore.astro";
 import Sending from "@components/pages/Sending.astro";
 import Volunteer from "@components/pages/Volunteer.astro";
-
-
 import { extractLang } from "@wp/extractLang.js";
 import { apiURL } from "@wp/config.js";
+import { 
+    getPostsInfo, 
+    getImageInfo, 
+    getCategoriesInfo, 
+    getRRSSInfo,
+    getSlidesInfo,
+    getExperienciesInfo,
+    getOfertesInfo,
+    getExperienciesErasmusInfo,
+    getIntercanvisJuvenilInfo,
+    getQuiSomInfo
+} from "@wp/index.js";
 
 export async function getStaticPaths() {
-    const languages = ["ca", "es", "en"]; // Idiomas soportados
-
-    const pagesRes = await fetch(`${apiURL}/pages?slug=erasmus-experiencies-ca,intercanvis-juvenil-ca&_fields=acf,slug&per_page=100`);
-    const pages = await pagesRes.json();
+    const languages = ["ca", "es", "en"];
     
-    let paths: { params: { lang: string; slug: string }; props: { acf: any } }[] = [];
-
-    pages.forEach((page: { slug: string; acf: any }) => {
-        const extracted = extractLang(page.slug);
-        if (extracted && languages.includes(extracted.lang) && !page.acf.categoria) {
-            paths.push({
-                params: { lang: extracted.lang, slug: extracted.baseSlug },
-                props: { acf: page.acf },
-            });
-        }
+    console.log("🚀 Iniciando build optimizado...");
+    const startTime = Date.now();
+    
+    // ============================================
+    // PASO 1: FETCHEAR DATOS GLOBALES (1 vez por idioma)
+    // ============================================
+    console.log("📡 Fetching global data...");
+    
+    const globalDataPromises = languages.map(async (lang) => {
+        // Fetchear ACF de header, footer, categorías y RRSS en paralelo
+        const [rawHeaderACF, rawFooterACF, categories, rrssRaw] = await Promise.all([
+            getPostsInfo("header", lang),
+            getPostsInfo("footer", lang),
+            getCategoriesInfo(lang),
+            getRRSSInfo()
+        ]);
+        
+        const headerACF = rawHeaderACF || {};
+        const footerACF = rawFooterACF || {};
+        
+        // Resolver imagen del header
+        const headerImage = headerACF.header_imagen 
+            ? await getImageInfo(headerACF.header_imagen)
+            : null;
+        
+        // Resolver imágenes del footer en paralelo
+        const footerImageIds = [
+            footerACF.ubicacion_imagen,
+            footerACF.telefono_imagen,
+            footerACF.correo_imagen
+        ].filter(Boolean);
+        
+        const footerImages = await Promise.all(
+            footerImageIds.map(id => getImageInfo(id))
+        );
+        
+        // Resolver imágenes de RRSS en paralelo
+        const rrssWithImages = await Promise.all(
+            rrssRaw.map(async (red) => {
+                if (red.imageId) {
+                    const img = await getImageInfo(red.imageId);
+                    return {
+                        link: red.link,
+                        imageUrl: img.source_url || "",
+                        imageAlt: img.alt_text || red.title || "Red social"
+                    };
+                }
+                return {
+                    link: red.link,
+                    imageUrl: red.imageUrl || "",
+                    imageAlt: red.imageAlt || red.title || "Red social"
+                };
+            })
+        );
+        
+        return {
+            lang,
+            header: {
+                ...headerACF,
+                imageUrl: headerImage?.source_url || "",
+                imageAlt: headerImage?.alt_text || "Logo Vibria"
+            },
+            footer: {
+                ...footerACF,
+                ubicacionImage: { 
+                    url: footerImages[0]?.source_url || "", 
+                    alt: footerImages[0]?.alt_text || "Ubicación" 
+                },
+                telefonoImage: { 
+                    url: footerImages[1]?.source_url || "", 
+                    alt: footerImages[1]?.alt_text || "Teléfono" 
+                },
+                correoImage: { 
+                    url: footerImages[2]?.source_url || "", 
+                    alt: footerImages[2]?.alt_text || "Correo" 
+                }
+            },
+            categories,
+            rrss: rrssWithImages
+        };
     });
+    
+    const globalDataArray = await Promise.all(globalDataPromises);
+    
+    // Convertir array a objeto indexado por idioma
+    const globalData = Object.fromEntries(
+        globalDataArray.map(data => [data.lang, data])
+    );
+    
+    console.log(`✅ Global data fetched in ${Date.now() - startTime}ms`);
+    
+    // ============================================
+    // PASO 2: FETCHEAR TODAS LAS PÁGINAS
+    // ============================================
+    console.log("📡 Fetching all pages...");
+    
+    const pagesRes = await fetch(
+        `${apiURL}/pages?per_page=100&_fields=slug,acf,content`
+    );
+    const allPages = await pagesRes.json();
+    
+    console.log(`✅ ${allPages.length} pages fetched`);
+    
+    // ============================================
+    // PASO 3: RESOLVER DATOS ESPECÍFICOS POR TIPO DE PÁGINA
+    // ============================================
+    console.log("📡 Resolving page-specific data in parallel...");
+    
+    const pathsPromises = allPages.map(async (page) => {
+        const extracted = extractLang(page.slug);
+        if (!extracted || !languages.includes(extracted.lang)) {
+            return null;
+        }
+        
+        const { lang, baseSlug } = extracted;
+        const slugCompleto = page.slug;
+        
+        // Páginas con categoría son detalladas (ofertes/*, experiencies/*)
+        if (page.acf.categoria) {
+            return null; // Las manejaremos en [subslug].astro
+        }
+        
+        // Determinar tipo de página y resolver sus datos específicos
+        let typeSpecificData = {}; // Initialize as empty object
+        
+        try {
+            switch (baseSlug) {
+                case 'home': {
+                    // Resolver slides con imágenes
+                    const slidesRaw = await getSlidesInfo(lang);
+                    typeSpecificData = { slides: slidesRaw || [] };
+                    break;
+                }
+                
+                case 'experiencies': {
+                    // Resolver experiencias con imágenes
+                    const experiencias = await getExperienciesInfo(lang, slugCompleto);
+                    typeSpecificData = { experiencias: experiencias || [] };
+                    break;
+                }
+                
+                case 'ofertes': {
+                    // Resolver ofertas con imágenes
+                    const ofertas = await getOfertesInfo(lang);
+                    typeSpecificData = { ofertas: ofertas || [] };
+                    break;
+                }
+                
+                case 'erasmus-experiencies': {
+                    // Resolver experiencias Erasmus
+                    const experiencias = await getExperienciesErasmusInfo(lang);
+                    typeSpecificData = { experiencias: experiencias || [] };
+                    break;
+                }
+                
+                case 'intercanvis-juvenil': {
+                    // Resolver intercambios juveniles
+                    const experiencias = await getIntercanvisJuvenilInfo(lang);
+                    typeSpecificData = { experiencias: experiencias || [] };
+                    break;
+                }
+                
+                case 'qui-som': {
+                    // QuiSom tiene estructura especial con equipo
+                    const quiSomData = await getQuiSomInfo(lang, slugCompleto);
+                    typeSpecificData = { 
+                        pageContent: quiSomData[0]?.pageContent || '',
+                        teamMembers: quiSomData.map(item => item.content).filter(Boolean) || []
+                    };
+                    break;
+                }
+                
+                // Páginas simples: solo necesitan su content
+                // No necesitan typeSpecificData adicional
+                default:
+                    break;
+            }
+        } catch (error) {
+            console.error(`❌ Error resolving data for ${baseSlug}:`, error.message);
+            typeSpecificData = {}; // On error, ensure it's an empty object
+        }
+        
+        return {
+            params: { lang, slug: baseSlug },
+            props: {
+                globalData: globalData[lang],
+                pageData: {
+                    acf: page.acf,
+                    content: page.content?.rendered || "",
+                    slug: baseSlug
+                },
+                typeSpecificData
+            }
+        };
+    });
+    
+    const paths = (await Promise.all(pathsPromises)).filter(Boolean);
+    
+    const endTime = Date.now();
+    const duration = ((endTime - startTime) / 1000).toFixed(2);
+    
+    console.log(`✅ Build completed: ${paths.length} pages in ${duration}s`);
+    console.log(`⚡ Average: ${(duration / paths.length).toFixed(2)}s per page`);
     
     return paths;
 }
 
-const { acf } = Astro.props;
+const { globalData, pageData, typeSpecificData } = Astro.props;
 
 let PageComponent;
 
@@ -132,6 +331,6 @@ switch (Astro.params.slug) {
         break;
 }
 ---
-<Layout>
-    {PageComponent ? <PageComponent data={{ acf }} /> : <div>Page not found</div>}
+<Layout globalData={globalData}>
+    {PageComponent ? <PageComponent pageData={pageData} typeSpecificData={typeSpecificData} globalData={globalData} /> : <div>Page not found</div>}
 </Layout>

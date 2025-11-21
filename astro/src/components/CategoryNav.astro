@@ -1,8 +1,9 @@
 ---
-import { getCategoriesInfo } from "@wp/getCategoriesInfo.js";
+// astro/src/components/CategoryNav.astro
 
+// ✅ Recibe categorías por props
+const { categories } = Astro.props;
 const { lang, slug } = Astro.params;
-const categoriesMap = await getCategoriesInfo(lang);
 
 const lastSegment = slug.toLowerCase();
 
@@ -10,7 +11,7 @@ let currentCategory = null;
 let currentCategoryId = null;
 let currentCategorySlug = null;
 
-for (const parent of categoriesMap.parent) {
+for (const parent of categories.parent) {
   const baseSlug = parent.slug.toLowerCase();
 
   if (lastSegment === baseSlug) {
@@ -20,7 +21,7 @@ for (const parent of categoriesMap.parent) {
     break;
   }
 
-  const subcategories = categoriesMap.children[parent.id] || [];
+  const subcategories = categories.children[parent.id] || [];
   for (const sub of subcategories) {
     const subBaseSlug = sub.slug.toLowerCase();
     if (lastSegment === subBaseSlug) {
@@ -37,21 +38,16 @@ for (const parent of categoriesMap.parent) {
 const categoryColors = {
   "La Víbria": { bg: "bg-secondary", border: "border-secondary" },
   "The Vibria": { bg: "bg-secondary", border: "border-secondary" },
-
   "Voluntariado Europeo": { bg: "bg-red", border: "border-red" },
   "Voluntariat Europeu": { bg: "bg-red", border: "border-red" },
   "European volunteering": { bg: "bg-red", border: "border-red" },
-
   "Erasmus+": { bg: "bg-blue", border: "border-blue" },
-
   "Prácticas Internacionales": { bg: "bg-yellow", border: "border-yellow" },
   "Pràctiques Internacionals": { bg: "bg-yellow", border: "border-yellow" },
   "International practices": { bg: "bg-yellow", border: "border-yellow" },
-
   "Proyectos Internacionales": { bg: "bg-orange", border: "border-orange" },
   "Projectes Internacionals": { bg: "bg-orange", border: "border-orange" },
   "International Projects": { bg: "bg-orange", border: "border-orange" },
-
   "Proyectos Locales": { bg: "bg-pink", border: "border-pink" },
   "Projectes Locals": { bg: "bg-pink", border: "border-pink" },
   "Local Projects": { bg: "bg-pink", border: "border-pink" },
@@ -59,46 +55,44 @@ const categoryColors = {
 
 const currentCategoryColors = categoryColors[currentCategory] ?? {
   bg: "",
-  border: "border-secondary",
+  border: "",
 };
 ---
 
-{
-  currentCategory && (
-    <>
-      <div class={`${currentCategoryColors.bg} text-white px-4 py-2 font-bold text-lg w-full text-center sticky top-[76px] z-20 md:hidden`}>
-        {currentCategory}
-      </div>
+{currentCategory && (
+  <>
+    <div class={`${currentCategoryColors.bg} text-white px-4 py-2 font-bold text-lg w-full text-center sticky top-[76px] z-20 md:hidden`}>
+      {currentCategory}
+    </div>
 
-      {currentCategoryId &&
-        categoriesMap.children[currentCategoryId]?.length > 0 && (
-        <div class={`md:h-full md:w-[15%] md:pt-[50px] md:float-left sticky top-[120px] z-20 md:top-[160px] md:mx-5`}>
-            <nav class={`flex gap-6 px-4 py-3 bg-gray-50 border-b border-gray-200 overflow-x-auto whitespace-nowrap md:flex-col md:bg-transparent md:text-wrap md:border-b-transparent md:gap-2 md:border-l ${currentCategoryColors.border} md:overflow-x-hidden`}>
-            {categoriesMap.children[currentCategoryId].map((sub) => {
-              const isActive = sub.slug.toLowerCase() === lastSegment;
-              return (
-                <a
-                  href={`/${lang}/${sub.slug}`}
-                  id={isActive ? "active-subcategory" : undefined}
-                  class={`text-sm relative pb-1 ${
-                    isActive
-                      ? `font-bold text-black border-b-4 ${currentCategoryColors.border}`
-                      : "text-gray-500"
-                  }`}
-                >
-                  {sub.title}
-                </a>
-              );
-            })}
-          </nav>
-        </div>
-        )}
-    </>
-  )
-}
- <script>
-    const activeSub = document.querySelector("#active-subcategory");
-    if (activeSub) {
-      activeSub.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
+    {currentCategoryId && categories.children[currentCategoryId]?.length > 0 && (
+      <div class={`md:h-full md:w-[15%] md:pt-[50px] md:float-left sticky top-[120px] z-20 md:top-[160px] md:mx-5`}>
+        <nav class={`flex gap-6 px-4 py-3 bg-gray-50 border-b border-gray-200 overflow-x-auto whitespace-nowrap md:flex-col md:bg-transparent md:border-b-transparent md:gap-2 md:border-l ${currentCategoryColors.border} md:overflow-x-hidden`}>
+          {categories.children[currentCategoryId].map((sub) => {
+            const isActive = sub.slug.toLowerCase() === lastSegment;
+            return (
+              <a
+                href={`/${lang}/${sub.slug}`}
+                id={isActive ? "active-subcategory" : undefined}
+                class={`text-sm relative pb-1${
+                  isActive
+                    ? `font-bold text-black border-b-4 ${currentCategoryColors.border}`
+                    : "text-gray-500 hover:text-gray-800"
+                }`}
+              >
+                {sub.title}
+              </a>
+            );
+          })}
+        </nav>
+      </div>
+    )}
+  </>
+)}
+
+<script>
+  const activeSub = document.querySelector("#active-subcategory");
+  if (activeSub) {
+    activeSub.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 </script>

@@ -3,17 +3,19 @@ import { getExperienciaDetalladaInfo } from "@wp/index.js";
 import CategoryNav from "@components/CategoryNav.astro";
 import "@styles/experiencia-content.css";
 
-const { lang, slug, subslug } = Astro.params;
-const slugCompleto = `${subslug}-${lang}`;
+const { lang, slug } = Astro.params;
+const { globalData, pageData, detailedData } = Astro.props;
 
-const experiencia = await getExperienciaDetalladaInfo(slugCompleto);
+// Use detailedData for the specific experience
+const experiencia = detailedData;
+const { categories } = globalData;
 
 ---
-<CategoryNav lang={lang} slug={slug} />
+<CategoryNav lang={lang} slug={slug} categories={categories} />
 
 <article class="mx-auto bg-white p-4 space-y-4 md:px-12 lg:px-16 xl:px-20 md:mx-[15%]">
     
-    <div class="experiencia-content" set:html={experiencia.content}></div>
+    <div class="experiencia-content" set:html={pageData.content}></div>
 
     <div class="flex items-center justify-center mt-4">
         <a href={experiencia.buttonUrl} class="bg-red text-white font-700 pb-1 px-2 before:text-center rounded-3xl shadow-[0_2px_4px_0_px_rgba(0,0,0,0.25)]">

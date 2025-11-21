@@ -1,29 +1,54 @@
 import { apiURL } from "./config.js";
 import { getImageInfo } from "./getImageInfo.js";
 
-export const getRRSSInfo = async () => {
-  try {
-    const response = await fetch(`${apiURL}/redes_sociales?order=asc&_fields=acf`);
-    if (!response.ok) {
-      throw new Error("Error al obtener las redes sociales");
-    }
-    const data = await response.json();
-    
-    // Obtener las imágenes de cada slide en paralelo
-    const RRSSConImagenes = await Promise.all(
-      data.map(async (red_social) => {
-        const imageData = red_social.acf.rrss_imagen ? await getImageInfo(red_social.acf.rrss_imagen) : null;
-        return {
-          imageUrl: imageData?.source_url || "",
-          imageAlt: imageData?.alt_text || "RRSS image",
-          link: red_social.acf.rrss_link
-        };
-      })
-    );    
+export async function getRRSSInfo() {
+    try {
+        // Fetchear custom post type de RRSS
+        const res = await fetch(
+            `${apiURL}/redes-sociales?per_page=100&_fields=acf`
+        );
+        
+        if (!res.ok) {
+            console.error(`❌ Error fetching RRSS: ${res.status} - ${res.statusText}`);
+            return []; // Return empty array on fetch error
+        }
 
-    return RRSSConImagenes;
-  } catch (error) {
-    console.error("Error obteniendo redes sociales:", error);
-    return [];
-  }
-};
+        const rrssRaw = await res.json();
+        
+        // Ensure rrssRaw is an array before calling .map()
+        if (!Array.isArray(rrssRaw)) {
+            console.warn(`⚠️ getRRSSInfo: Expected an array from API, but received:`, rrssRaw);
+            return [];
+        }
+        
+        // ✅ PARALELIZAR: Resolver TODAS las imágenes de RRSS en paralelo
+        const rrssPromises = rrssRaw.map(async (red) => {
+            let imageUrl = "";
+            let imageAlt = "";
+            
+            if (red.acf.icono) {
+                try {
+                    const imgData = await getImageInfo(red.acf.icono);
+                    imageUrl = imgData.source_url || "";
+                    imageAlt = imgData.alt_text || red.acf.nombre || "Red social";
+                } catch (error) {
+                    console.error(`❌ Error fetching RRSS icon for ${red.acf.nombre}:`, error.message);
+                }
+            }
+            
+            return {
+                link: red.acf.url || "#",
+                imageUrl,
+                imageAlt,
+                title: red.acf.nombre || ""
+            };
+        });
+        
+        const rrss = await Promise.all(rrssPromises);
+        
+        return rrss;
+    } catch (error) {
+        console.error(`❌ Global error in getRRSSInfo:`, error.message);
+        return [];
+    }
+}

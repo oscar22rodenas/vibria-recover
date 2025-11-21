@@ -1,29 +1,30 @@
 ---
 import { Picture } from "astro:assets";
-import { getOfertaDetalladaInfo } from "@wp/index.js";
 import CategoryNav from "@components/CategoryNav.astro";
 import "@styles/oferta-content.css";
 
-const { lang, slug, subslug } = Astro.params;
-const slugCompleto = `${subslug}-${lang}`;
+const { lang, slug } = Astro.params;
+const { globalData, pageData, detailedData } = Astro.props;
 
-const oferta = await getOfertaDetalladaInfo(slugCompleto);
+// Use detailedData for the specific oferta
+const oferta = detailedData;
+const { categories } = globalData;
 ---
 
-<CategoryNav lang={lang} slug={slug} />
+<CategoryNav lang={lang} slug={slug} categories={categories} />
 
 <article class="mx-auto bg-white p-4 space-y-4 md:px-12 lg:px-16 xl:px-20 md:mx-[15%]">
   <h1 class="text-2xl font-700 text-center md:text-3xl">{oferta.title}</h1>
 
   <div class="md:columns-2 md:gap-8">
-    <Picture
+    {oferta.imageUrl && <Picture
       formats={["webp", "avif", "jpeg"]}
       src={oferta.imageUrl}
       alt={oferta.imageAlt}
       width="300"
       height="118"
       class="mx-auto"
-    />
+    />}
 
     <div class="flex items-center gap-2 text-sm mt-2">
       <Picture
@@ -47,7 +48,7 @@ const oferta = await getOfertaDetalladaInfo(slugCompleto);
       <span class="text-black font-600">{oferta.fechas}</span>
     </div>
 
-    <div class="oferta-content" set:html={oferta.content} />
+    <div class="oferta-content" set:html={pageData.content} />
   </div>
   <div class="flex items-center justify-center mt-4">
     <a

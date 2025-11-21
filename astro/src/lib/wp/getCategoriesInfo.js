@@ -1,54 +1,54 @@
 import { apiURL } from "./config.js";
+import { categoriesCache } from './helpers.js';
 
-export const getCategoriesInfo = async (lang) => {
-  
-  const response = await fetch(`${apiURL}/menu?page=1&orderby=date&order=asc&_fields=title,acf,slug,id&per_page=500`);
-  const menus = await response.json();
-
-  const filteredMenus = menus.filter(menu => menu.slug.includes(`-${lang}`));
-
-  const categoriesMap = {
-    parent: [],
-    children: {}
-  };
-
-  for (const menu of filteredMenus) {
-    const categoryTitle = menu.acf?.categoria_titulo;
-    const subcategoryIds = menu.acf?.subcategorias || [];
+export async function getCategoriesInfo(lang) {
+    // ✅ Verificar cache
+    if (categoriesCache.has(lang)) {
+        return categoriesCache.get(lang);
+    }
     
-    categoriesMap.parent.push({
-      id: menu.id,
-      title: categoryTitle,
-      slug: menu.slug.replace(/-(ca|es|en)$/, "")
-
-    });
-
-    // Realizar todas las solicitudes de subcategorías en paralelo usando Promise.allSettled
-    const subcategoriesResults = await Promise.allSettled(
-      subcategoryIds.map(async (subId) => {
-        try {
-          const subResponse = await fetch(`${apiURL}/subcategorias_menu/${subId}?_fields=acf,slug`);
-          if (!subResponse.ok) {
-            console.warn(`Subcategoría con ID ${subId} no encontrada (status: ${subResponse.status})`);
-            return null; // Retornar null si no se encuentra la subcategoría
-          }
-          const subcategory = await subResponse.json();
-          return {
-            title: subcategory.acf?.subcategoria_titol || "Sin título",
-            slug: subcategory.slug.replace(/-(ca|es|en)$/, "")
-          };
-        } catch (error) {
-          console.error(`Error al obtener la subcategoría con ID ${subId}:`, error);
-          return null; // Retornar null en caso de error
-        }
-      })
-    );
-
-    // Filtrar subcategorías válidas (que no sean null y que hayan sido resueltas correctamente)
-    categoriesMap.children[menu.id] = subcategoriesResults
-      .filter(result => result.status === "fulfilled" && result.value !== null)
-      .map(result => result.value);
-  }
-
-  return categoriesMap;
-};
+    try {
+        const res = await fetch(
+            `${apiURL}/categories?per_page=100&_fields=id,name,slug,parent`
+        );
+        const categories = await res.json();
+        
+        // Filtrar por idioma y estructurar
+        const filteredCategories = categories.filter(cat => {
+            return cat.slug.endsWith(`-${lang}`) || !cat.slug.includes('-ca') && !cat.slug.includes('-es') && !cat.slug.includes('-en');
+        });
+        
+        const parent = filteredCategories.filter(cat => cat.parent === 0);
+        const children = {};
+        
+        filteredCategories.forEach(cat => {
+            if (cat.parent !== 0) {
+                if (!children[cat.parent]) {
+                    children[cat.parent] = [];
+                }
+                children[cat.parent].push({
+                    id: cat.id,
+                    title: cat.name,
+                    slug: cat.slug.replace(`-${lang}`, '')
+                });
+            }
+        });
+        
+        const result = {
+            parent: parent.map(cat => ({
+                id: cat.id,
+                title: cat.name,
+                slug: cat.slug.replace(`-${lang}`, '')
+            })),
+            children
+        };
+        
+        // ✅ Guardar en cache
+        categoriesCache.set(lang, result);
+        
+        return result;
+    } catch (error) {
+        console.error(`❌ Error fetching categories for ${lang}:`, error.message);
+        return { parent: [], children: {} };
+    }
+}

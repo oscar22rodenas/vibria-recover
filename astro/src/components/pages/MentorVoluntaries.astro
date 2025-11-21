@@ -1,21 +1,17 @@
 ---
 import CategoryNav from "@components/CategoryNav.astro";
-import { getMentorVoluntariesInfo } from "@wp/getMentorVoluntariesInfo";
 import "@styles/mentor-voluntaries-content.css";
 
-
-
+const { pageData, globalData } = Astro.props;
+const { content } = pageData;
+const { categories } = globalData;
 const { lang, slug } = Astro.params;
-
-const slugCompleto = `${slug}-${lang}`;
-
-const mentorVoluntaries = await getMentorVoluntariesInfo(lang, slugCompleto);
 ---
 
-<CategoryNav lang={lang} slug={slug} />
+<CategoryNav lang={lang} slug={slug} categories={categories} />
 
 <article class="max-w-4xl mx-auto bg-white p-4 space-y-4 flex md:mx-[15%]">
     
-  <div class="mentor-voluntaries-content" set:html={mentorVoluntaries.content}></div>
+  <div class="mentor-voluntaries-content" set:html={content}></div>
 
 </article>

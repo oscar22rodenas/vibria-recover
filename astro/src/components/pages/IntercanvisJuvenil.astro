@@ -1,15 +1,16 @@
 ---
 import { Picture } from "astro:assets";
 import CategoryNav from "@components/CategoryNav.astro";
-import { getIntercanvisJuvenilInfo } from "@wp/index.js";
 import "@styles/intercanvis-juvenil-content.css";
 
 const { lang, slug } = Astro.params;
+const { globalData, pageData, typeSpecificData } = Astro.props;
 
-const experiencies = await getIntercanvisJuvenilInfo(lang);
+const experiencies = typeSpecificData.experiencies || [];
+const { categories } = globalData;
 ---
 
-<CategoryNav lang={lang} slug={slug} />
+<CategoryNav lang={lang} slug={slug} categories={categories} />
 
 <article class="intercanvis-juvenil-contenidor md:mx-[15%]">
   <h2>Ultimes Ofertas</h2>
@@ -75,6 +76,6 @@ const experiencies = await getIntercanvisJuvenilInfo(lang);
 
   <div
     class="intercanvis-juvenil-content py-8"
-    set:html={experiencies[0].content}
+    set:html={pageData.content}
   />
 </article>

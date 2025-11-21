@@ -5,6 +5,29 @@ import Header from "@components/Header.astro";
 import Footer from "@components/Footer.astro";
 
 const { lang } = Astro.params;
+const { globalData } = Astro.props;
+
+// Determinar categoría actual para el Header
+const { slug } = Astro.params;
+const lastSegment = slug?.toLowerCase() ?? "";
+
+let currentCategory = null;
+for (const parent of globalData.categories.parent) {
+  const baseSlug = parent.slug.toLowerCase();
+  if (lastSegment === baseSlug) {
+    currentCategory = parent.title;
+    break;
+  }
+  
+  const subcategories = globalData.categories.children[parent.id] || [];
+  for (const sub of subcategories) {
+    if (sub.slug.toLowerCase() === lastSegment) {
+      currentCategory = parent.title;
+      break;
+    }
+  }
+  if (currentCategory) break;
+}
 ---
 
 <!doctype html>
@@ -12,69 +35,50 @@ const { lang } = Astro.params;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
-
     <title>La Víbria Intercultural</title>
-    <meta
-      name="description"
-      content="Projectes de voluntariat europeu i mobilitat internacional per a joves."
-    />
-    <meta
-      name="keywords"
-      content="voluntariat, europeu, joves, mobilitat internacional, ESC, solidaritat, viatges, interculturalitat"
-    />
-    <meta
-      name="author"
-      content="La Víbria Intercultural | Óscar Ródenas, Adrian Bernabeu, Brian Arrua"
-    />
+    <meta name="description" content="Projectes de voluntariat europeu i mobilitat internacional per a joves." />
+    <meta name="keywords" content="voluntariat, europeu, joves, mobilitat internacional, ESC, solidaritat" />
+    <meta name="author" content="La Víbria Intercultural" />
     <meta name="robots" content="index, follow" />
-
+    
     <meta property="og:type" content="website" />
     <meta property="og:title" content="La Víbria Intercultural" />
-    <meta
-      property="og:description"
-      content="Descobreix projectes de voluntariat europeu i oportunitats de mobilitat internacional per a joves."
-    />
+    <meta property="og:description" content="Descobreix projectes de voluntariat europeu i oportunitats de mobilitat internacional per a joves." />
     <meta property="og:url" content="https://vibria.org" />
-    <meta
-      property="og:image"
-      content="https://vibria.org/images/og-image.jpg"
-    />
-    <!-- Asegúrate que esta URL exista y sea absoluta -->
+    <meta property="og:image" content="https://vibria.org/images/og-image.jpg" />
     <meta property="og:site_name" content="La Víbria Intercultural" />
     <meta property="og:locale" content="ca_CA" />
-
-    <!-- 🐦 Twitter Card -->
+    
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="La Víbria Intercultural" />
-    <meta
-      name="twitter:description"
-      content="Voluntariat europeu i oportunitats internacionals per a joves."
-    />
-    <meta
-      name="twitter:image"
-      content="https://vibria.org/images/og-image.jpg"
-    />
-    <meta name="twitter:site" content="@vibria_org" />
-
-    <!-- Canonical -->
+    <meta name="twitter:description" content="Voluntariat europeu i oportunitats internacionals per a joves." />
+    <meta name="twitter:image" content="https://vibria.org/images/og-image.jpg" />
+    
     <link rel="canonical" href="https://vibria.org" />
   </head>
   <body class="prose">
     <div class="layout-container">
-      <Header />
+      <Header 
+        headerData={globalData.header}
+        categories={globalData.categories}
+        rrssData={globalData.rrss}
+        currentCategory={currentCategory}
+      />
       <main>
         <slot />
       </main>
-      <Footer />
+      <Footer 
+        footerData={globalData.footer}
+        rrssData={globalData.rrss}
+      />
     </div>
   </body>
 </html>
 
 <style>
-  html,
-  body {
+  html, body {
     margin: 0;
     width: 100%;
     display: flex;
