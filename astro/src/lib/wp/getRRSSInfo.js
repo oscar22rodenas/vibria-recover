@@ -5,7 +5,7 @@ export async function getRRSSInfo() {
     try {
         // Fetchear custom post type de RRSS
         const res = await fetch(
-            `${apiURL}/redes_sociales?per_page=100&_fields=acf`
+            `${apiURL}/redes_sociales?order=asc&per_page=100&_fields=acf`
         );
         
         if (!res.ok) {
@@ -26,9 +26,9 @@ export async function getRRSSInfo() {
             let imageUrl = "";
             let imageAlt = "";
             
-            if (red.acf.icono) {
+            if (red.acf.rrss_imagen) {
                 try {
-                    const imgData = await getImageInfo(red.acf.icono);
+                    const imgData = await getImageInfo(red.acf.rrss_imagen);
                     imageUrl = imgData.source_url || "";
                     imageAlt = imgData.alt_text || red.acf.nombre || "Red social";
                 } catch (error) {
@@ -37,10 +37,9 @@ export async function getRRSSInfo() {
             }
             
             return {
-                link: red.acf.url || "#",
+                link: red.acf.rrss_link || "#",
                 imageUrl,
-                imageAlt,
-                title: red.acf.nombre || ""
+                imageAlt
             };
         });
         
