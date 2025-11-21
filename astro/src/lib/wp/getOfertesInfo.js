@@ -1,49 +1,59 @@
 import { apiURL } from "./config.js";
 import { getImageInfo } from "./getImageInfo.js";
+import { getPageById } from "./getPageById.js";
 import { extractLang } from "./extractLang.js";
 
 export async function getOfertesInfo(lang) {
-    // Fetchear todas las ofertas
-    const res = await fetch(
-        `${apiURL}/pages?categories=ofertes&per_page=100&_fields=acf,slug,content`
-    );
-    const ofertesRaw = await res.json();
-    
-    // ✅ PARALELIZAR: Resolver TODAS las imágenes en paralelo
-    const ofertesPromises = ofertesRaw.map(async (oferta) => {
+  try {
+    const response = await fetch(`${apiURL}/ofertes?order=asc&_fields=acf,slug`);
+    if (!response.ok) {
+      throw new Error("Error al obtener los ofertes");
+    }
+    const data = await response.json();
+    const responsePage = await fetch(`${apiURL}/pages?slug=ofertes-${lang}&_fields=content`);
+    if (!responsePage.ok) {
+      throw new Error("Error al obtener la página");
+    }
+    const [pageDataInfo] = await responsePage.json();
+
+    // Filtrar los ofertes según el idioma (usando el slug)
+    const ofertesFiltrados = data.filter(oferta => {
         const extracted = extractLang(oferta.slug);
-        if (!extracted || extracted.lang !== lang) {
-            return null;
-        }
-        
-        // Resolver imagen
-        let imageUrl = "";
-        let imageAlt = "";
-        
-        if (oferta.acf.imagen) {
-            try {
-                const imgData = await getImageInfo(oferta.acf.imagen);
-                imageUrl = imgData.source_url || "";
-                imageAlt = imgData.alt_text || oferta.acf.titulo || "";
-            } catch (error) {
-                console.error(`❌ Error fetching image for ${oferta.slug}:`, error.message);
-            }
-        }
-        
-        return {
-            title: oferta.acf.titulo || "",
-            text: oferta.acf.descripcion_corta || "",
-            imageUrl,
-            imageAlt,
-            link: `/${lang}/ofertes/${extracted.baseSlug}`,
-            ubicacion: oferta.acf.ubicacion || "",
-            fechas: oferta.acf.fechas || "",
-            dataLimit: oferta.acf.data_limit || "",
-            content: oferta.content?.rendered || ""
-        };
+        return extracted && extracted.lang === lang;
     });
     
-    const ofertes = (await Promise.all(ofertesPromises)).filter(Boolean);
-    
-    return ofertes;
+    // Obtener las imágenes de cada oferta en paralelo
+    const ofertesConDatos = await Promise.all(
+      ofertesFiltrados.map(async (oferta) => {
+        const { acf } = oferta;
+        // Validar que `acf` exista antes de acceder a sus propiedades
+        if (!acf) {
+          console.warn(`Oferta sin datos ACF: ${oferta.slug}`);
+          return null;
+        }
+
+        const [imageData, pageData] = await Promise.all([
+          acf.oferta_imagen ? getImageInfo(acf.oferta_imagen) : null,
+          acf.oferta_link ? getPageById(acf.oferta_link) : null
+        ]);
+
+        return {
+          title: acf.oferta_titulo,
+          text: acf.oferta_texto,
+          ubicacion: acf.oferta_ubicacion,
+          fechas: acf.oferta_fechas,
+          dataLimit: acf.oferta_data_limit,
+          link: pageData ? `/${pageData.lang}${pageData.categoriaSlug}/${pageData.baseSlug}` : "#",
+          imageUrl: imageData?.source_url || "",
+          imageAlt: imageData?.alt_text || "oferta image",
+          content: pageDataInfo.content.rendered || "",
+        };
+      })
+    );    
+
+    return ofertesConDatos.filter(Boolean);
+  } catch (error) {
+    console.error("Error obteniendo ofertes:", error);
+    return [];
+  }
 }

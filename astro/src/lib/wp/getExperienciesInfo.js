@@ -1,63 +1,59 @@
 import { apiURL } from "./config.js";
 import { getImageInfo } from "./getImageInfo.js";
+import { getPageById } from "./getPageById.js";
 import { extractLang } from "./extractLang.js";
 
 export async function getExperienciesInfo(lang, slugCompleto) {
-    // Fetchear la página base
-    const pageRes = await fetch(
-        `${apiURL}/pages?slug=${slugCompleto}&_fields=content,acf`
-    );
-    const [pageData] = await pageRes.json();
-    
-    if (!pageData) {
-        console.error(`❌ Page not found: ${slugCompleto}`);
-        return [];
+  try {
+    const response = await fetch(`${apiURL}/experiencies-ve?order=asc&_fields=acf,slug`);
+    if (!response.ok) {
+      throw new Error("Error al obtener los experiencies");
     }
+    const data = await response.json();
+
+    const responsePage = await fetch(`${apiURL}/pages?slug=${slugCompleto}&_fields=content`);
+    if (!responsePage.ok) {
+      throw new Error("Error al obtener la página");
+    }
+    const [pageDataInfo] = await responsePage.json();
     
-    // Obtener todas las experiencias de la categoría
-    const categorySlug = pageData.acf.categoria_experiencias || "experiencies";
-    const experienciesRes = await fetch(
-        `${apiURL}/pages?categories=${categorySlug}&per_page=100&_fields=acf,slug,content`
-    );
-    const experienciesRaw = await experienciesRes.json();
-    
-    // ✅ PARALELIZAR: Resolver TODAS las imágenes en paralelo
-    const experienciesPromises = experienciesRaw.map(async (exp) => {
-        const extracted = extractLang(exp.slug);
-        if (!extracted || extracted.lang !== lang) {
-            return null;
-        }
-        
-        // Resolver imagen en paralelo
-        let imageUrl = "";
-        let imageAlt = "";
-        
-        if (exp.acf.imagen) {
-            try {
-                const imgData = await getImageInfo(exp.acf.imagen);
-                imageUrl = imgData.source_url || "";
-                imageAlt = imgData.alt_text || exp.acf.titulo || "";
-            } catch (error) {
-                console.error(`❌ Error fetching image for ${exp.slug}:`, error.message);
-            }
-        }
-        
-        return {
-            title: exp.acf.titulo || "",
-            text: exp.acf.descripcion || "",
-            imageUrl,
-            imageAlt,
-            link: `/${lang}/experiencies/${extracted.baseSlug}`,
-            ubicacion: exp.acf.ubicacion || "",
-            fechas: exp.acf.fechas || "",
-            dataLimit: exp.acf.data_limit || "",
-            pinVoluntariat: exp.acf.pin_voluntariat || "",
-            pinPais: exp.acf.pin_pais || "",
-            content: pageData.content?.rendered || "" // Content de la página base
-        };
+    // Filtrar los experiencies según el idioma (usando el slug)
+    const experienciesFiltrados = data.filter(experiencia => {
+        const extracted = extractLang(experiencia.slug);
+        return extracted && extracted.lang === lang;
     });
     
-    const experiencies = (await Promise.all(experienciesPromises)).filter(Boolean);
-    
-    return experiencies;
+    // Obtener las imágenes de cada experiencia en paralelo
+    const experienciesConDatos = await Promise.all(
+      experienciesFiltrados.map(async (experiencia) => {
+        const { acf } = experiencia;
+        // Validar que `acf` exista antes de acceder a sus propiedades
+        if (!acf) {
+          console.warn(`experiencia sin datos ACF: ${experiencia.slug}`);
+          return null;
+        }
+
+        const [imageData, pageData] = await Promise.all([
+          acf.experiencia_imagen ? getImageInfo(acf.experiencia_imagen) : null,
+          acf.experiencia_link ? getPageById(acf.experiencia_link) : null
+        ]);
+
+        return {
+          title: acf.experiencia_titulo,
+          text: acf.experiencia_texto,
+          link: pageData ? `/${pageData.lang}${pageData.categoriaSlug}/${pageData.baseSlug}` : "#",
+          imageUrl: imageData?.source_url || "",
+          imageAlt: imageData?.alt_text || "experiencia image",
+          pinVoluntariat: acf.experiencia_pin_voluntariat,
+          pinPais: acf.experiencia_pin_pais,
+          content: pageDataInfo.content.rendered || "",
+        };
+      })
+    );    
+
+    return experienciesConDatos.filter(Boolean);
+  } catch (error) {
+    console.error("Error obteniendo experiencies:", error);
+    return [];
+  }
 }
