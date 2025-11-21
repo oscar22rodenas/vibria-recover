@@ -12,7 +12,7 @@ export async function getPostsInfo(slug, lang) {
     try {
         const slugCompleto = `${slug}-${lang}`;
         const res = await fetch(
-            `${apiURL}/pages?slug=${slugCompleto}&_fields=acf`
+            `${apiURL}/posts?slug=${slugCompleto}&_fields=acf`
         );
         const [pageData] = await res.json();
         
