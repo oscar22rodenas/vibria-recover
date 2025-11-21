@@ -45,19 +45,12 @@ const sectionsToRender = categories.parent?.length > 0
 <div class="sticky top-0 z-30 md:hidden">
   <header class="flex items-center justify-between bg-primary px-4 py-2 z-10">
     <a id="menu-toggle" class="flex justify-start min-w-[90px] z-10 cursor-pointer">
-      <Picture
-        formats={["webp", "avif", "jpeg"]}
-        id="menu-icon"
-        src="/iconos/menu.png"
-        alt="Menu"
-        width="30"
-        height="30"
-      />
+      <img src="/iconos/menu.svg" alt="Menu" class="w-[30px] h-[30px]" />
       <span id="close-icon" class="hidden justify-center text-[2.5rem] text-white">×</span>
     </a>
 
     <a href={`/${lang}/home`} class="z-10">
-      {imageUrl && <Picture src={imageUrl} alt={imageAlt} width="60" height="60" />}
+      <img src={imageUrl} alt={imageAlt} class="w-[60px] h-[60px]" />
     </a>
 
     <LanguageSwitcher currentLang={lang} class="z-10" />
@@ -122,7 +115,7 @@ const sectionsToRender = categories.parent?.length > 0
 <div class="hidden md:block md:sticky md:top-0 md:z-30">
   <header class="bg-[#058279] flex justify-between items-center px-6 py-4">
     <a class="flex flex-row items-center justify-center gap-4" href={`/${lang}/home`}>
-      {imageUrl && <Picture src={imageUrl} alt={imageAlt} width="80" height="80" />}
+      <img src={imageUrl} alt={imageAlt} class="w-[80px] h-[80px]" />
       <p class="h3 font-800">La Víbria Intercultural</p>
     </a>
 

@@ -21,13 +21,8 @@ const imageAltMail = footerData.correoImage.alt || "Correo";
 
     <div class="flex flex-col items-start justify-center text-center gap-2 pb-4 md:flex-row-reverse md:items-center md:gap-8 lg:gap-12">
       <div class="flex flex-row items-center gap-4">
-        {imageUrlUbi && <Picture
-          formats={["webp", "avif", "jpeg"]}
-          src={imageUrlUbi}
-          alt={imageAltUbi}
-          width="20"
-          height="20"
-        />}
+        <img src={imageUrlUbi} alt={imageAltUbi} class="w-[20px] h-[20px]" />
+
         <ul class="list-none text-left">
           <li class="p font-500">{footerData.ubicacion_texto}</li>
           <li class="p">{footerData.ubicacion_lugar_texto}</li>
@@ -37,26 +32,12 @@ const imageAltMail = footerData.correoImage.alt || "Correo";
       
       <div class="flex flex-col items-start justify-center text-center gap-2 md:flex-col-reverse md:w-1/3 lg:w-1/4">
         <div class="flex flex-row items-center gap-4">
-          {imageUrlTel && <Picture
-            formats={["webp", "avif", "jpeg"]}
-            src={imageUrlTel}
-            alt={imageAltTel}
-            width="20"
-            height="20"
-            class="md:max-w-fit"
-          />}
+          <img src={imageUrlTel} alt={imageAltTel} class="w-[20px] h-[20px]" />
           <p class="p md:text-left">{footerData.telefono_texto}</p>
         </div>
         
         <div class="flex flex-row items-center gap-4">
-          {imageUrlMail && <Picture
-            formats={["webp", "avif", "jpeg"]}
-            src={imageUrlMail}
-            alt={imageAltMail}
-            width="20"
-            height="20"
-            class="md:max-w-fit"
-          />}
+          <img src={imageUrlMail} alt={imageAltMail} class="w-[20px] h-[20px]" />
           <p class="p">{footerData.correo_texto}</p>
         </div>
       </div>
