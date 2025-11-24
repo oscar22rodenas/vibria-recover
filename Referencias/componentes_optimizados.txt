@@ -1,0 +1,604 @@
+// ==========================================
+// Header.astro OPTIMIZADO (Sin fetchs)
+// ==========================================
+
+---
+// astro/src/components/Header.astro
+import { Picture } from "astro:assets";
+import LanguageSwitcher from "./LanguageSwitcher.astro";
+import RRSS from "@components/RRSS.astro";
+
+// ✅ Ya no hace fetchs, recibe todo por props
+const { headerData, categories, currentCategory } = Astro.props;
+const { lang, slug } = Astro.params;
+
+const imageUrl = headerData.imageUrl || "";
+const imageAlt = headerData.imageAlt || "Logo Vibria";
+
+const lastSegment = slug?.toLowerCase() ?? "";
+
+const categoryColors = {
+  "La Víbria": { text: "text-secondary" },
+  "The Vibria": { text: "text-secondary" },
+  "Voluntariado Europeo": { text: "text-red" },
+  "Voluntariat Europeu": { text: "text-red" },
+  "European volunteering": { text: "text-red" },
+  "Erasmus+": { text: "text-blue" },
+  "Prácticas Internacionales": { text: "text-yellow" },
+  "Pràctiques Internacionals": { text: "text-yellow" },
+  "International practices": { text: "text-yellow" },
+  "Proyectos Internacionales": { text: "text-orange" },
+  "Projectes Internacionals": { text: "text-orange" },
+  "International Projects": { text: "text-orange" },
+  "Proyectos Locales": { text: "text-pink" },
+  "Projectes Locals": { text: "text-pink" },
+  "Local Projects": { text: "text-pink" },
+};
+
+const currentCategoryColors = categoryColors[currentCategory] ?? { text: "" };
+
+const sectionsToRender = categories.parent?.length > 0
+  ? categories.parent.map((parent) => ({
+      title: parent.title,
+      items: categories.children[parent.id]?.map((child) => child.title) || [],
+      links: categories.children[parent.id]?.map((child) => `/${lang}/${child.slug}`) || [],
+    }))
+  : [];
+---
+
+<!-- MOBILE VERSION -->
+<div class="sticky top-0 z-30 md:hidden">
+  <header class="flex items-center justify-between bg-primary px-4 py-2 z-10">
+    <a id="menu-toggle" class="flex justify-start min-w-[90px] z-10 cursor-pointer">
+      <Picture
+        formats={["webp", "avif", "jpeg"]}
+        id="menu-icon"
+        src="/iconos/menu.png"
+        alt="Menu"
+        width="30"
+        height="30"
+      />
+      <span id="close-icon" class="hidden justify-center text-[2.5rem] text-white">×</span>
+    </a>
+
+    <a href={`/${lang}/home`} class="z-10">
+      <Picture src={imageUrl} alt={imageAlt} width="60" height="60" />
+    </a>
+
+    <LanguageSwitcher currentLang={lang} class="z-10" />
+  </header>
+
+  <div
+    id="menu"
+    class="grid grid-rows-[auto_1fr_auto_auto] fixed inset-0 mt-[4.5rem] bg-white pt-0 z-10 shadow-lg overflow-y-auto transition-all duration-300 -translate-y-5 opacity-0 invisible"
+  >
+    <div class="bg-yellow text-white text-center font-medium px-4 py-2">
+      <div class="flex justify-between items-center">
+        <span class="text-lg text-start min-w-[90px] gap-1">Contacte</span>
+        <span class="px-4 py-1 border-2 border-white rounded-full font-bold tracking-wide">ASSESSORIES</span>
+        <span class="text-lg text-end min-w-[90px] gap-1">Tienda</span>
+      </div>
+    </div>
+    
+    <div class="flex flex-col justify-center w-full max-w-2xl mx-auto">
+      {sectionsToRender.map((section, index) => (
+        <div class="border-b border-gray-200">
+          <div
+            class="flex items-center py-6 px-4 cursor-pointer accordion-header"
+            data-index={index}
+          >
+            <span class="w-full text-center text-lg font-bold text-[#058279]">
+              {section.title}
+            </span>
+            {section.items.length > 0 && (
+              <img
+                class="w-5 h-5 transition-transform duration-300 accordion-icon"
+                src="/images/flecha-abajo.png"
+                alt="Flecha"
+                data-open="false"
+              />
+            )}
+          </div>
+          {section.items.length > 0 && (
+            <div class="max-h-0 p-0 overflow-hidden transition-[max-height] duration-300 -mx-5">
+              {section.items.map((item, itemIndex) => (
+                <a
+                  href={section.links[itemIndex]}
+                  class="border-b border-white block py-2 text-white text-center bg-[#5DC695] font-bold"
+                >
+                  {item}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+    
+    <div class="bg-yellow text-white text-center font-bold text-lg py-2">
+      Sigues voluntari/a local
+    </div>
+    
+    <RRSS rrssData={Astro.props.rrssData} />
+  </div>
+</div>
+
+<!-- DESKTOP VERSION -->
+<div class="hidden md:block md:sticky md:top-0 md:z-30">
+  <header class="bg-[#058279] flex justify-between items-center px-6 py-4">
+    <a class="flex flex-row items-center justify-center gap-4" href={`/${lang}/home`}>
+      <Picture src={imageUrl} alt={imageAlt} width="80" height="80" />
+      <p class="h3 font-800">La Víbria Intercultural</p>
+    </a>
+
+    <div class="flex items-center gap-2 lg:gap-4">
+      <a class="text-white text-base font-700 px-2 py-0.5 border border-white rounded-full" href="#">
+        Assessories
+      </a>
+      <a class="text-white text-base font-400 px-2 py-0.5" href="#">Contacte</a>
+      <a class="text-white text-base font-400 px-2 py-0.5" href="#">Tienda</a>
+      <LanguageSwitcher currentLang={lang} class="z-10" />
+    </div>
+  </header>
+
+  <nav class="flex flex-row justify-between gap-2 bg-white text-primary text-sm font-semibold items-center p-4 lg:px-6">
+    {sectionsToRender.map((section, idx) => (
+      <div class="relative">
+        <div
+          class="flex items-center gap-1 cursor-pointer text-[11px] font-500 lg:text-[15px] lg:font-700 dropdown-toggle"
+          data-index={idx}
+        >
+          <span
+            class={`${section.title === currentCategory ? currentCategoryColors.text : "text-[#058279]"}`}
+          >
+            {section.title}
+          </span>
+          {section.items.length > 0 && (
+            <img
+              src="/images/flecha-abajo.png"
+              alt="Flecha"
+              class={`w-3.5 h-3.5 lg:w-4 lg:h-4 transform transition-transform duration-200 ${
+                section.title === currentCategory ? "rotate-180" : ""
+              }`}
+              data-open="false"
+            />
+          )}
+        </div>
+        {section.items.length > 0 && (
+          <div
+            class="absolute top-8 -left-6 bg-secondary text-white text-center min-w-[125px] opacity-0 invisible transition-all duration-200 z-40 lg:top-10 lg:min-w-[150px] dropdown-menu"
+            data-index={idx}
+          >
+            {section.items.map((item, idx2) => (
+              <a
+                href={section.links[idx2]}
+                class="block px-4 py-2 border-t border-t-white hover:underline"
+              >
+                {item}
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+    ))}
+  </nav>
+</div>
+
+<script>
+  window.addEventListener("DOMContentLoaded", () => {
+    function initMenu() {
+      const toggleBtn = document.querySelector("#menu-toggle");
+      const menu = document.querySelector("#menu");
+      const closeIcon = document.querySelector("#close-icon");
+
+      toggleBtn?.addEventListener("click", () => {
+        menu?.classList.toggle("translate-y-0");
+        menu?.classList.toggle("opacity-100");
+        menu?.classList.toggle("visible");
+        menu?.classList.toggle("-translate-y-5");
+        menu?.classList.toggle("opacity-0");
+        menu?.classList.toggle("invisible");
+        toggleBtn.querySelector("img")?.classList.toggle("hidden");
+        closeIcon?.classList.toggle("hidden");
+        document.body.classList.toggle("overflow-hidden");
+      });
+
+      document.querySelectorAll(".accordion-header").forEach((header) => {
+        header.addEventListener("click", () => {
+          const content = header.nextElementSibling;
+          const icon = header.querySelector(".accordion-icon");
+          content?.classList.toggle("max-h-[500px]");
+          const isOpen = icon?.getAttribute("data-open") === "true";
+          if (icon) {
+            icon.src = isOpen ? "/images/flecha-abajo.png" : "/images/flecha-arriba.png";
+            icon.setAttribute("data-open", isOpen ? "false" : "true");
+          }
+        });
+      });
+    }
+
+    function initDesktopDropdowns() {
+      document.querySelectorAll(".dropdown-toggle").forEach((toggle) => {
+        toggle.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const index = toggle.dataset.index;
+          const menu = document.querySelector(`.dropdown-menu[data-index="${index}"]`);
+          const icon = toggle.querySelector("img");
+
+          document.querySelectorAll(".dropdown-menu").forEach((m) => {
+            if (m !== menu) {
+              m.classList.add("opacity-0", "invisible");
+              m.classList.remove("opacity-100", "visible");
+            }
+          });
+
+          document.querySelectorAll(".dropdown-toggle img").forEach((i) => {
+            if (i !== icon) i.classList.remove("rotate-180");
+          });
+
+          const isOpen = menu?.classList.contains("opacity-100");
+          if (menu) {
+            menu.classList.toggle("opacity-100", !isOpen);
+            menu.classList.toggle("visible", !isOpen);
+            menu.classList.toggle("opacity-0", isOpen);
+            menu.classList.toggle("invisible", isOpen);
+          }
+
+          if (icon) icon.classList.toggle("rotate-180", !isOpen);
+        });
+      });
+
+      document.addEventListener("click", (e) => {
+        const isClickInside = e.target.closest(".dropdown-toggle") || e.target.closest(".dropdown-menu");
+        if (!isClickInside) {
+          document.querySelectorAll(".dropdown-menu").forEach((menu) => {
+            menu.classList.add("opacity-0", "invisible");
+            menu.classList.remove("opacity-100", "visible");
+          });
+          document.querySelectorAll(".dropdown-toggle img").forEach((icon) => {
+            icon.classList.remove("rotate-180");
+          });
+        }
+      });
+    }
+
+    initMenu();
+    initDesktopDropdowns();
+  });
+</script>
+
+// ==========================================
+// Footer.astro OPTIMIZADO (Sin fetchs)
+// ==========================================
+
+---
+// astro/src/components/Footer.astro
+import { Picture } from "astro:assets";
+import RRSS from "@components/RRSS.astro";
+
+// ✅ Recibe datos ya resueltos por props
+const { footerData, rrssData } = Astro.props;
+
+const imageUrlUbi = footerData.ubicacionImage.url || "";
+const imageAltUbi = footerData.ubicacionImage.alt || "Ubicación";
+
+const imageUrlTel = footerData.telefonoImage.url || "";
+const imageAltTel = footerData.telefonoImage.alt || "Teléfono";
+
+const imageUrlMail = footerData.correoImage.url || "";
+const imageAltMail = footerData.correoImage.alt || "Correo";
+---
+
+<footer class="bg-primary px-12 pt-2 pb-1 gap-2">
+  <div class="flex flex-col justify-center items-center gap-2 md:flex-row md:gap-8 md:py-6 lg:gap-4">
+    <RRSS rrssData={rrssData} />
+
+    <div class="flex flex-col items-start justify-center text-center gap-2 pb-4 md:flex-row-reverse md:items-center md:gap-8 lg:gap-12">
+      <div class="flex flex-row items-center gap-4">
+        <Picture
+          formats={["webp", "avif", "jpeg"]}
+          src={imageUrlUbi}
+          alt={imageAltUbi}
+          width="20"
+          height="20"
+        />
+        <ul class="list-none text-left">
+          <li class="p font-500">{footerData.ubicacion_texto}</li>
+          <li class="p">{footerData.ubicacion_lugar_texto}</li>
+          <li class="p">{footerData.ubicacion_horario_texto}</li>
+        </ul>
+      </div>
+      
+      <div class="flex flex-col items-start justify-center text-center gap-2 md:flex-col-reverse md:w-1/3 lg:w-1/4">
+        <div class="flex flex-row items-center gap-4">
+          <Picture
+            formats={["webp", "avif", "jpeg"]}
+            src={imageUrlTel}
+            alt={imageAltTel}
+            width="20"
+            height="20"
+            class="md:max-w-fit"
+          />
+          <p class="p md:text-left">{footerData.telefono_texto}</p>
+        </div>
+        
+        <div class="flex flex-row items-center gap-4">
+          <Picture
+            formats={["webp", "avif", "jpeg"]}
+            src={imageUrlMail}
+            alt={imageAltMail}
+            width="20"
+            height="20"
+            class="md:max-w-fit"
+          />
+          <p class="p">{footerData.correo_texto}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <p class="copyright text- text-center t">{footerData.derechos_vibria_texto}</p>
+</footer>
+
+// ==========================================
+// CategoryNav.astro OPTIMIZADO (Sin fetchs)
+// ==========================================
+
+---
+// astro/src/components/CategoryNav.astro
+
+// ✅ Recibe categorías por props
+const { categories } = Astro.props;
+const { lang, slug } = Astro.params;
+
+const lastSegment = slug.toLowerCase();
+
+let currentCategory = null;
+let currentCategoryId = null;
+let currentCategorySlug = null;
+
+for (const parent of categories.parent) {
+  const baseSlug = parent.slug.toLowerCase();
+
+  if (lastSegment === baseSlug) {
+    currentCategory = parent.title;
+    currentCategoryId = parent.id;
+    currentCategorySlug = baseSlug;
+    break;
+  }
+
+  const subcategories = categories.children[parent.id] || [];
+  for (const sub of subcategories) {
+    const subBaseSlug = sub.slug.toLowerCase();
+    if (lastSegment === subBaseSlug) {
+      currentCategory = parent.title;
+      currentCategoryId = parent.id;
+      currentCategorySlug = baseSlug;
+      break;
+    }
+  }
+
+  if (currentCategory) break;
+}
+
+const categoryColors = {
+  "La Víbria": { bg: "bg-secondary", border: "border-secondary" },
+  "The Vibria": { bg: "bg-secondary", border: "border-secondary" },
+  "Voluntariado Europeo": { bg: "bg-red", border: "border-red" },
+  "Voluntariat Europeu": { bg: "bg-red", border: "border-red" },
+  "European volunteering": { bg: "bg-red", border: "border-red" },
+  "Erasmus+": { bg: "bg-blue", border: "border-blue" },
+  "Prácticas Internacionales": { bg: "bg-yellow", border: "border-yellow" },
+  "Pràctiques Internacionals": { bg: "bg-yellow", border: "border-yellow" },
+  "International practices": { bg: "bg-yellow", border: "border-yellow" },
+  "Proyectos Internacionales": { bg: "bg-orange", border: "border-orange" },
+  "Projectes Internacionals": { bg: "bg-orange", border: "border-orange" },
+  "International Projects": { bg: "bg-orange", border: "border-orange" },
+  "Proyectos Locales": { bg: "bg-pink", border: "border-pink" },
+  "Projectes Locals": { bg: "bg-pink", border: "border-pink" },
+  "Local Projects": { bg: "bg-pink", border: "border-pink" },
+};
+
+const currentCategoryColors = categoryColors[currentCategory] ?? {
+  bg: "",
+  border: "",
+};
+---
+
+{currentCategory && (
+  <>
+    <div class={`${currentCategoryColors.bg} text-white px-4 py-2 font-bold text-lg w-full text-center sticky top-[76px] z-20 md:hidden`}>
+      {currentCategory}
+    </div>
+
+    {currentCategoryId && categories.children[currentCategoryId]?.length > 0 && (
+      <div class={`md:h-full md:w-[15%] md:pt-[50px] md:float-left sticky top-[120px] z-20 md:top-[160px] md:mx-5`}>
+        <nav class={`flex gap-6 px-4 py-3 bg-gray-50 border-b border-gray-200 overflow-x-auto whitespace-nowrap md:flex-col md:bg-transparent md:border-b-transparent md:gap-2 md:border-l ${currentCategoryColors.border} md:overflow-x-hidden`}>
+          {categories.children[currentCategoryId].map((sub) => {
+            const isActive = sub.slug.toLowerCase() === lastSegment;
+            return (
+              <a
+                href={`/${lang}/${sub.slug}`}
+                id={isActive ? "active-subcategory" : undefined}
+                class={`text-sm relative pb-1${
+                  isActive
+                    ? `font-bold text-black border-b-4 ${currentCategoryColors.border}`
+                    : "text-gray-500 hover:text-gray-800"
+                }`}
+              >
+                {sub.title}
+              </a>
+            );
+          })}
+        </nav>
+      </div>
+    )}
+  </>
+)}
+
+<script>
+  const activeSub = document.querySelector("#active-subcategory");
+  if (activeSub) {
+    activeSub.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+</script>
+
+// ==========================================
+// RRSS.astro OPTIMIZADO (Sin fetchs)
+// ==========================================
+
+---
+// astro/src/components/RRSS.astro
+import { Picture } from 'astro:assets';
+
+// ✅ Recibe datos resueltos por props
+const { rrssData } = Astro.props;
+---
+
+<div class="flex flex-row justify-center items-center bg-primary p-2 gap-6 md:gap-4">
+  {rrssData.map((red_social) => (
+    <a href={red_social.link}>
+      <Picture 
+        formats={['webp', 'avif', 'jpeg']} 
+        src={red_social.imageUrl} 
+        alt={red_social.imageAlt} 
+        width="30" 
+        height="30" 
+      />
+    </a>
+  ))}
+</div>
+
+// ==========================================
+// Slide.astro OPTIMIZADO (Sin fetchs)
+// ==========================================
+
+---
+// astro/src/components/Slide.astro
+
+// ✅ Recibe slides con imágenes ya resueltas
+const { slides } = Astro.props;
+---
+
+<div id="slide-container" class="relative w-full min-h-[700px] overflow-hidden">
+  <div id="slides" class="w-full h-full">
+    {slides.map((slide, index) => (
+      <div
+        class={`slide absolute top-76 left-0 w-full min-h-[700px] flex justify-start transition-opacity duration-700 md:pl-16 xl:pl-32 ${index === 0 ? "opacity-100" : "opacity-0"}`}
+        data-index={index}
+        style={`background: linear-gradient(rgba(5, 130, 121, 0.6), rgba(5, 130, 121, 0.6)), url('${slide.imageUrl}') center/cover no-repeat;`}
+      >
+        <div class=" flex flex-col gap-3 items-start justify-center px-4 md:w-2/5">
+          <h1 class="h1" style="text-shadow: 1.2px 1.2px 0px #FFC721;">
+            {slide.title}
+          </h1>
+          <h3 class="h3 font-800 md:text-[22px]">{slide.subtitle}</h3>
+          <p class="p md:text-[17px]">{slide.text}</p>
+          <a href={slide.buttonUrl} class="btn">
+            {slide.buttonText}
+          </a>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <div
+    id="slide-buttons"
+    class="relative z-20 flex flex-row justify-center items-center gap-4"
+    style="top: 600px;"
+  >
+    {slides.map((_, index) => (
+      <button
+        class={`slide-button rounded-full transition-all ${
+          index === 0
+            ? "bg-yellow outline outline-2 outline-offset-3 outline-secondary  w-2 h-2"
+            : "bg-white w-3 h-3"
+        }`}
+        data-index={index}
+      />
+    ))}
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    let currentSlide = 0;
+    const slides = document.querySelectorAll(".slide");
+    const buttons = document.querySelectorAll(".slide-button");
+
+    function showSlide(index) {
+      slides.forEach((slide, i) => {
+        slide.style.opacity = i === index ? "1" : "0";
+        slide.style.zIndex = i === index ? "1" : "0";
+        slide.style.pointerEvents = i === index ? "auto" : "none";
+      });
+
+      buttons.forEach((button, i) => {
+        button.classList.toggle("bg-yellow", i === index);
+        button.classList.toggle("outline", i === index);
+        button.classList.toggle("outline-2", i === index);
+        button.classList.toggle("outline-offset-4", i === index);
+        button.classList.toggle("outline-secondary", i === index);
+        button.classList.toggle("w-2", i === index);
+        button.classList.toggle("h-2", i === index);
+        button.classList.toggle("bg-white", i !== index);
+        button.classList.toggle("w-3", i !== index);
+        button.classList.toggle("h-3", i !== index);
+      });
+
+      currentSlide = index;
+    }
+
+    function goToNextSlide() {
+      const nextSlide = (currentSlide + 1) % slides.length;
+      showSlide(nextSlide);
+    }
+
+    function goToPrevSlide() {
+      const prevSlide = (currentSlide - 1 + slides.length) % slides.length;
+      showSlide(prevSlide);
+    }
+
+    let autoSlideInterval = setInterval(goToNextSlide, 5000);
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const index = parseInt(button.dataset.index || "0");
+        showSlide(index);
+        clearInterval(autoSlideInterval);
+        autoSlideInterval = setInterval(goToNextSlide, 5000);
+      });
+    });
+
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    const slideContainer = document.querySelector("#slide-container");
+
+    slideContainer.addEventListener("touchstart", (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    });
+
+    slideContainer.addEventListener("touchend", (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipeGesture();
+    });
+
+    function handleSwipeGesture() {
+      const distance = touchEndX - touchStartX;
+      const threshold = 50;
+
+      if (Math.abs(distance) > threshold) {
+        if (distance < 0) {
+          goToNextSlide();
+        } else {
+          goToPrevSlide();
+        }
+        clearInterval(autoSlideInterval);
+        autoSlideInterval = setInterval(goToNextSlide, 5000);
+      }
+    }
+
+    showSlide(0);
+  });
+</script>

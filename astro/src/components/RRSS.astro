@@ -1,16 +1,13 @@
 ---
-import { Picture } from 'astro:assets';
-import { getRRSSInfo } from "@wp/index.js";
-
-const redes_sociales = await getRRSSInfo();
+// astro/src/components/RRSS.astro
+// ✅ Recibe datos resueltos por props
+const { rrssData } = Astro.props;
 ---
 
-<div class="flex flex-row justify-center items-center bg-primary p-2 gap-6 md:gap-4" >
-    {
-    redes_sociales.map((red_social) => (
-        <a href={red_social.link}>
-            <img src={red_social.imageUrl} alt={red_social.imageAlt} class="w-[30px] h-[30px]" />
-        </a>
-    ))
-    }
+<div class="flex flex-row justify-center items-center bg-primary p-2 gap-6 md:gap-4">
+  {rrssData.map((red_social) => (
+    <a href={red_social.link}>
+      <img src={red_social.imageUrl} alt={red_social.imageAlt} class="w-[35px] h-[35px]" />
+    </a>
+  ))}
 </div>

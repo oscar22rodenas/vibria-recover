@@ -1,58 +1,48 @@
 ---
 import { Picture } from "astro:assets";
 import RRSS from "@components/RRSS.astro";
-import { getPostsInfo, getImageInfo } from "@wp/index.js";
 
-const { lang } = Astro.params;
-const acf = await getPostsInfo("footer", lang);
+// ✅ Recibe datos ya resueltos por props
+const { footerData, rrssData } = Astro.props;
 
-const imageIds = [acf.ubicacion_imagen, acf.telefono_imagen, acf.correo_imagen];
+const imageUrlUbi = footerData.ubicacionImage.url || "";
+const imageAltUbi = footerData.ubicacionImage.alt || "Ubicación";
 
-// Hacer todas las llamadas de imágenes en paralelo
-const imagesData = await Promise.all(imageIds.map((id) => getImageInfo(id)));
+const imageUrlTel = footerData.telefonoImage.url || "";
+const imageAltTel = footerData.telefonoImage.alt || "Teléfono";
 
-// Asignar los datos obtenidos
-const [imageDataUbi, imageDataTel, imageDataMail] = imagesData;
-
-const imageUrlUbi = imageDataUbi?.source_url || "";
-const imageAltUbi = imageDataUbi?.alt_text || "Logo Vibria";
-
-const imageUrlTel = imageDataTel?.source_url || "";
-const imageAltTel = imageDataTel?.alt_text || "Logo Vibria";
-
-const imageUrlMail = imageDataMail?.source_url || "";
-const imageAltMail = imageDataMail?.alt_text || "Logo Vibria";
+const imageUrlMail = footerData.correoImage.url || "";
+const imageAltMail = footerData.correoImage.alt || "Correo";
 ---
 
 <footer class="bg-primary px-12 pt-2 pb-1 gap-2">
   <div class="flex flex-col justify-center items-center gap-2 md:flex-row md:gap-8 md:py-6 lg:gap-4">
-    <RRSS />
+    <RRSS rrssData={rrssData} />
 
-    <div
-      class="flex flex-col items-start justify-center text-center gap-2 pb-4 md:flex-row-reverse md:items-center md:gap-8 lg:gap-12"
-    >
+    <div class="flex flex-col items-start justify-center text-center gap-2 pb-4 md:flex-row-reverse md:items-center md:gap-8 lg:gap-12">
       <div class="flex flex-row items-center gap-4">
         <img src={imageUrlUbi} alt={imageAltUbi} class="w-[20px] h-[20px]" />
-        
+
         <ul class="list-none text-left">
-          <li class="p font-500">{acf.ubicacion_texto}</li>
-          <li class="p">{acf.ubicacion_lugar_texto}</li>
-          <li class="p">{acf.ubicacion_horario_texto}</li>
+          <li class="p font-500">{footerData.ubicacion_texto}</li>
+          <li class="p">{footerData.ubicacion_lugar_texto}</li>
+          <li class="p">{footerData.ubicacion_horario_texto}</li>
         </ul>
       </div>
-      <div
-        class="flex flex-col items-start justify-center text-center gap-2 md:flex-col-reverse md:w-1/3 lg:w-1/4"
-      >
+      
+      <div class="flex flex-col items-start justify-center text-center gap-2 md:flex-col-reverse md:w-1/3 lg:w-1/4">
         <div class="flex flex-row items-center gap-4">
           <img src={imageUrlTel} alt={imageAltTel} class="w-[20px] h-[20px]" />
-          <p class="p md:text-left">{acf.telefono_texto}</p>
+          <p class="p md:text-left">{footerData.telefono_texto}</p>
         </div>
+        
         <div class="flex flex-row items-center gap-4">
           <img src={imageUrlMail} alt={imageAltMail} class="w-[20px] h-[20px]" />
-          <p class="p">{acf.correo_texto}</p>
+          <p class="p">{footerData.correo_texto}</p>
         </div>
       </div>
     </div>
   </div>
-  <p class="copyright text- text-center t">{acf.derechos_vibria_texto}</p>
+  
+  <p class="copyright text- text-center t">{footerData.derechos_vibria_texto}</p>
 </footer>

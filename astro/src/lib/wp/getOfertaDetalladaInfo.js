@@ -2,7 +2,7 @@ import { apiURL } from "./config.js";
 import { getImageInfo } from "./getImageInfo.js";
 import { getPageById } from "./getPageById.js";
 
-export const getOfertaDetalladaInfo = async (slug) => {
+export async function getOfertaDetalladaInfo(slug) {
   try {
     const responseOferta = await fetch(`${apiURL}/ofertes?slug=${slug}&_fields=acf`);
     if (!responseOferta.ok) {
@@ -32,6 +32,6 @@ export const getOfertaDetalladaInfo = async (slug) => {
         };
   } catch (error) {
     console.error("Error obteniendo ofertes:", error);
-    return [];
+    return null;
   }
-};
+}

@@ -1,18 +1,19 @@
 ---
 import { Picture } from "astro:assets";
 import CategoryNav from "@components/CategoryNav.astro";
-import { getExperienciesErasmusInfo } from "@wp/index.js";
 import "@styles/experiencies-erasmus-content.css";
 
 const { lang, slug } = Astro.params;
+const { globalData, pageData, typeSpecificData } = Astro.props;
 
-const experiencies = await getExperienciesErasmusInfo(lang);
+const experiencies = typeSpecificData.experiencias || [];
+const { categories } = globalData;
 
 ---
 
-<CategoryNav lang={lang} slug={slug} />
+<CategoryNav lang={lang} slug={slug} categories={categories} />
 
-<div class="experiencies-content md:mx-[15%]" set:html={experiencies[0]?.content}></div>
+<div class="experiencies-content md:mx-[15%]" set:html={pageData.content}></div>
 
 <div class="p-4 grid grid-cols-1 gap-5 md:grid-cols-2 md:mx-[15%]">
   {

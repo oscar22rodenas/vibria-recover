@@ -1,16 +1,16 @@
 ---
 import CategoryNav from "@components/CategoryNav.astro";
 // import "@styles/ocell-foc-content.css";
-import { getOcellFocInfo } from "@wp/getOcellFocInfo";
 
+const { pageData, globalData } = Astro.props;
+const { content } = pageData;
+const { categories } = globalData;
 const { lang, slug } = Astro.params;
-const slugCompleto = `${slug}-${lang}`;
-const ocellFoc = await getOcellFocInfo(lang, slugCompleto);
 ---
 
-<CategoryNav lang={lang} slug={slug} />
+<CategoryNav lang={lang} slug={slug} categories={categories} />
 <article class="max-w-lg mx-auto bg-white p-4 space-y-4 flex md:mx-[15%]">
     
-  <div class="ocell-foc-content" set:html={ocellFoc.content}></div>
+  <div class="ocell-foc-content" set:html={content}></div>
 
 </article>

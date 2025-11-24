@@ -1,17 +1,17 @@
 ---
 import CategoryNav from "@components/CategoryNav.astro";
 // import "@styles/experiencies-pi-content.css";
-import { getExperienciesPiInfo } from "@wp/getExperienciesPiInfo";
 
+const { pageData, globalData } = Astro.props;
+const { content } = pageData;
+const { categories } = globalData;
 const { lang, slug } = Astro.params;
-const slugCompleto = `${slug}-${lang}`;
-const experienciesPi = await getExperienciesPiInfo(lang, slugCompleto);
 ---
 
-<CategoryNav lang={lang} slug={slug} />
+<CategoryNav lang={lang} slug={slug} categories={categories} />
 
 <article class="max-w-lg mx-auto bg-white p-4 space-y-4 flex md:mx-[15%]">
     
-  <div class="experienciesPi-content" set:html={experienciesPi.content}></div>
+  <div class="experienciesPi-content" set:html={content}></div>
 
 </article>

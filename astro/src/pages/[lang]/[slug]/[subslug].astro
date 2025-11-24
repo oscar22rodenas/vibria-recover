@@ -1,37 +1,171 @@
 ---
 import { extractLang } from "@wp/extractLang.js";
 import { apiURL } from "@wp/config.js";
-
-
+import { 
+    getPostsInfo, 
+    getImageInfo, 
+    getCategoriesInfo, 
+    getRRSSInfo,
+    getOfertaDetalladaInfo,
+    getExperienciaDetalladaInfo,
+    getCategoriesHeaderInfo
+} from "@wp/index.js";
 import Layout from "@layouts/Layout.astro";
 import OfertaDetallada from "@components/pages/OfertaDetallada.astro";
 import ExperienciaDetallada from "@components/pages/ExperienciaDetallada.astro";
 
-
-
 export async function getStaticPaths() {
-    const languages = ["ca", "es", "en"]; // Idiomas soportados
-
-    const pagesRes = await fetch(`${apiURL}/pages?slug=voluntariat-claudia-bulgaria-ca&_fields=acf,slug,content.rendered&per_page=100`);
-    const pages = await pagesRes.json();
+    const languages = ["ca", "es", "en"];
     
-    let paths: { params: { lang: string; slug: string; subslug: string}; props: { acf: any, content: string } }[] = [];
-
-    pages.forEach((page: { slug: string; acf: any, content: { rendered: string } }) => {
-        const extracted = extractLang(page.slug);
+    console.log("🚀 Building detailed pages...");
+    const startTime = Date.now();
+    
+    // ============================================
+    // PASO 1: FETCHEAR DATOS GLOBALES (igual que antes)
+    // ============================================
+    const globalDataPromises = languages.map(async (lang) => {
+        const [rawHeaderACF, rawFooterACF, categories, rrssRaw, headerLinks] = await Promise.all([
+            getPostsInfo("header", lang),
+            getPostsInfo("footer", lang),
+            getCategoriesInfo(lang),
+            getRRSSInfo(),
+            getCategoriesHeaderInfo(lang)
+        ]);
         
-        if (extracted && languages.includes(extracted.lang) && page.acf.categoria) {
-            paths.push({
-                params: { lang: extracted.lang, slug: page.acf.categoria, subslug: extracted.baseSlug },
-                props: { acf: page.acf, content: page.content.rendered },
-            });
-        }
+        const headerACF = rawHeaderACF || {};
+        const footerACF = rawFooterACF || {};
+        
+        const headerImage = headerACF.header_imagen 
+            ? await getImageInfo(headerACF.header_imagen)
+            : null;
+        
+        const footerImageIds = [
+            footerACF.ubicacion_imagen,
+            footerACF.telefono_imagen,
+            footerACF.correo_imagen
+        ].filter(Boolean);
+        
+        const footerImages = await Promise.all(
+            footerImageIds.map(id => getImageInfo(id))
+        );
+        
+        const rrssWithImages = await Promise.all(
+            (rrssRaw || []).map(async (red) => {
+                if (red.imageId) {
+                    const img = await getImageInfo(red.imageId);
+                    return {
+                        link: red.link,
+                        imageUrl: img.source_url || "",
+                        imageAlt: img.alt_text || "Red social"
+                    };
+                }
+                return {
+                    link: red.link,
+                    imageUrl: red.imageUrl || "",
+                    imageAlt: red.imageAlt || "Red social"
+                };
+            })
+        );
+        
+        return {
+            lang,
+            header: {
+                ...headerACF,
+                imageUrl: headerImage?.source_url || "",
+                imageAlt: headerImage?.alt_text || "Logo Vibria"
+            },
+            footer: {
+                ...footerACF,
+                ubicacionImage: { 
+                    url: footerImages[0]?.source_url || "", 
+                    alt: footerImages[0]?.alt_text || "Ubicación" 
+                },
+                telefonoImage: { 
+                    url: footerImages[1]?.source_url || "", 
+                    alt: footerImages[1]?.alt_text || "Teléfono" 
+                },
+                correoImage: { 
+                    url: footerImages[2]?.source_url || "", 
+                    alt: footerImages[2]?.alt_text || "Correo" 
+                }
+            },
+            categories,
+            rrss: rrssWithImages,
+            headerLinks
+        };
     });
+    
+    const globalDataArray = await Promise.all(globalDataPromises);
+    const globalData = Object.fromEntries(
+        globalDataArray.map(data => [data.lang, data])
+    );
+    
+    // ============================================
+    // PASO 2: FETCHEAR PÁGINAS CON CATEGORÍA
+    // ============================================
+    const pagesRes = await fetch(
+        `${apiURL}/pages?per_page=100&_fields=slug,acf,content`
+    );
+    const allPages = await pagesRes.json();
+    
+    // Filtrar solo páginas detalladas (con categoría)
+    const detailedPages = allPages.filter(page => page.acf.categoria);
+    
+    console.log(`📄 Found ${detailedPages.length} detailed pages`);
+    
+    // ============================================
+    // PASO 3: RESOLVER DATOS DETALLADOS
+    // ============================================
+    const pathsPromises = detailedPages.map(async (page) => {
+        const extracted = extractLang(page.slug);
+        if (!extracted || !languages.includes(extracted.lang)) {
+            return null;
+        }
+        
+        const { lang, baseSlug } = extracted;
+        const categoria = page.acf.categoria;
+        const slugCompleto = page.slug;
+        
+        let detailedData = null;
+        
+        try {
+            if (categoria === 'ofertes') {
+                detailedData = await getOfertaDetalladaInfo(slugCompleto);
+            } else if (categoria === 'experiencies') {
+                detailedData = await getExperienciaDetalladaInfo(slugCompleto);
+            }
+        } catch (error) {
+            console.error(`❌ Error fetching ${categoria}/${baseSlug}:`, error.message);
+        }
+        
+        return {
+            params: { 
+                lang, 
+                slug: categoria, 
+                subslug: baseSlug 
+            },
+            props: {
+                globalData: globalData[lang],
+                pageData: {
+                    acf: page.acf,
+                    content: page.content?.rendered || ""
+                },
+                detailedData
+            }
+        };
+    });
+    
+    const paths = (await Promise.all(pathsPromises)).filter(Boolean);
+    
+    const endTime = Date.now();
+    const duration = ((endTime - startTime) / 1000).toFixed(2);
+    
+    console.log(`✅ Detailed pages built: ${paths.length} in ${duration}s`);
     
     return paths;
 }
 
-const { acf, content } = Astro.props;
+const { globalData, pageData, detailedData } = Astro.props;
 
 let PageComponent;
 
@@ -46,6 +180,6 @@ switch (Astro.params.slug) {
         break;
 }
 ---
-<Layout>
-    {PageComponent ? <PageComponent data={{ acf, content }} /> : <div>Page not found</div>}
+<Layout globalData={globalData}>
+    {PageComponent ? <PageComponent pageData={pageData} detailedData={detailedData} globalData={globalData} /> : <div>Page not found</div>}
 </Layout>

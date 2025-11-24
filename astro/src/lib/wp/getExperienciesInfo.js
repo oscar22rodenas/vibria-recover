@@ -1,8 +1,9 @@
 import { apiURL } from "./config.js";
 import { getImageInfo } from "./getImageInfo.js";
 import { getPageById } from "./getPageById.js";
+import { extractLang } from "./extractLang.js";
 
-export const getExperienciesInfo = async (lang, slug) => {
+export async function getExperienciesInfo(lang, slugCompleto) {
   try {
     const response = await fetch(`${apiURL}/experiencies-ve?order=asc&_fields=acf,slug`);
     if (!response.ok) {
@@ -10,19 +11,20 @@ export const getExperienciesInfo = async (lang, slug) => {
     }
     const data = await response.json();
 
-    const responsePage = await fetch(`${apiURL}/pages?slug=${slug}&_fields=content`);
+    const responsePage = await fetch(`${apiURL}/pages?slug=${slugCompleto}&_fields=content`);
     if (!responsePage.ok) {
       throw new Error("Error al obtener la página");
     }
     const [pageDataInfo] = await responsePage.json();
-
     
     // Filtrar los experiencies según el idioma (usando el slug)
-    const experienciesFiltrados = data.filter(experiencia => experiencia.slug.includes(`-${lang}`));
+    const experienciesFiltrados = data.filter(experiencia => {
+        const extracted = extractLang(experiencia.slug);
+        return extracted && extracted.lang === lang;
+    });
     
     // Obtener las imágenes de cada experiencia en paralelo
     const experienciesConDatos = await Promise.all(
-
       experienciesFiltrados.map(async (experiencia) => {
         const { acf } = experiencia;
         // Validar que `acf` exista antes de acceder a sus propiedades
@@ -31,9 +33,10 @@ export const getExperienciesInfo = async (lang, slug) => {
           return null;
         }
 
-        const imageData = acf.experiencia_imagen ? await getImageInfo(acf.experiencia_imagen) : null;
-
-        const pageData = acf.experiencia_link ? await getPageById(acf.experiencia_link) : null;
+        const [imageData, pageData] = await Promise.all([
+          acf.experiencia_imagen ? getImageInfo(acf.experiencia_imagen) : null,
+          acf.experiencia_link ? getPageById(acf.experiencia_link) : null
+        ]);
 
         return {
           title: acf.experiencia_titulo,
@@ -48,9 +51,9 @@ export const getExperienciesInfo = async (lang, slug) => {
       })
     );    
 
-    return experienciesConDatos;
+    return experienciesConDatos.filter(Boolean);
   } catch (error) {
     console.error("Error obteniendo experiencies:", error);
     return [];
   }
-};
+}

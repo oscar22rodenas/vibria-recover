@@ -1,18 +1,32 @@
 import { apiURL } from "./config.js";
+import { imageCache } from './helpers.js';
 
-export const getImageInfo = async (imageId) => {
-  if (!imageId) return "";
-
-  try {
-    const response = await fetch(`${apiURL}/media/${imageId}?_fields=source_url,alt_text`);
-    if (!response.ok) {
-      throw new Error(`No se encontró la imagen con ID ${imageId}`);
+export async function getImageInfo(imageId) {
+    if (!imageId) return null;
+    
+    // ✅ Verificar cache primero
+    if (imageCache.has(imageId)) {
+        return imageCache.get(imageId);
     }
-    const data = await response.json();
-
-    return { source_url: data.source_url, alt_text: data.alt_text };
-  } catch (error) {
-    console.error("Error obteniendo imagen:", error);
-    return "";
-  }
-};
+    
+    try {
+        const res = await fetch(
+            `${apiURL}/media/${imageId}?_fields=source_url,alt_text`
+        );
+        
+        if (!res.ok) {
+            console.error(`❌ Image ${imageId} not found (${res.status})`);
+            return null;
+        }
+        
+        const imageData = await res.json();
+        
+        // ✅ Guardar en cache
+        imageCache.set(imageId, imageData);
+        
+        return imageData;
+    } catch (error) {
+        console.error(`❌ Error fetching image ${imageId}:`, error.message);
+        return null;
+    }
+}

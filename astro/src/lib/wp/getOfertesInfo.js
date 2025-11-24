@@ -1,8 +1,9 @@
 import { apiURL } from "./config.js";
 import { getImageInfo } from "./getImageInfo.js";
 import { getPageById } from "./getPageById.js";
+import { extractLang } from "./extractLang.js";
 
-export const getOfertesInfo = async (lang) => {
+export async function getOfertesInfo(lang) {
   try {
     const response = await fetch(`${apiURL}/ofertes?order=asc&_fields=acf,slug`);
     if (!response.ok) {
@@ -16,11 +17,13 @@ export const getOfertesInfo = async (lang) => {
     const [pageDataInfo] = await responsePage.json();
 
     // Filtrar los ofertes según el idioma (usando el slug)
-    const ofertesFiltrados = data.filter(oferta => oferta.slug.includes(`-${lang}`));
+    const ofertesFiltrados = data.filter(oferta => {
+        const extracted = extractLang(oferta.slug);
+        return extracted && extracted.lang === lang;
+    });
     
     // Obtener las imágenes de cada oferta en paralelo
     const ofertesConDatos = await Promise.all(
-
       ofertesFiltrados.map(async (oferta) => {
         const { acf } = oferta;
         // Validar que `acf` exista antes de acceder a sus propiedades
@@ -29,9 +32,10 @@ export const getOfertesInfo = async (lang) => {
           return null;
         }
 
-        const imageData = acf.oferta_imagen ? await getImageInfo(acf.oferta_imagen) : null;
-
-        const pageData = acf.oferta_link ? await getPageById(acf.oferta_link) : null;
+        const [imageData, pageData] = await Promise.all([
+          acf.oferta_imagen ? getImageInfo(acf.oferta_imagen) : null,
+          acf.oferta_link ? getPageById(acf.oferta_link) : null
+        ]);
 
         return {
           title: acf.oferta_titulo,
@@ -47,9 +51,9 @@ export const getOfertesInfo = async (lang) => {
       })
     );    
 
-    return ofertesConDatos;
+    return ofertesConDatos.filter(Boolean);
   } catch (error) {
     console.error("Error obteniendo ofertes:", error);
     return [];
   }
-};
+}

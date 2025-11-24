@@ -1,16 +1,16 @@
 ---
 import CategoryNav from "@components/CategoryNav.astro";
 // import "@styles/playground-content.css";
-import { getPlaygroundInfo } from "@wp/getPlaygroundInfo";
 
+const { pageData, globalData } = Astro.props;
+const { content } = pageData;
+const { categories } = globalData;
 const { lang, slug } = Astro.params;
-const slugCompleto = `${slug}-${lang}`;
-const playground = await getPlaygroundInfo(lang, slugCompleto);
 ---
 
-<CategoryNav lang={lang} slug={slug} />
+<CategoryNav lang={lang} slug={slug} categories={categories} />
 <article class="max-w-lg mx-auto bg-white p-4 space-y-4 flex md:mx-[15%]">
     
-  <div class="playground-content" set:html={playground.content}></div>
+  <div class="playground-content" set:html={content}></div>
 
 </article>
