@@ -6,7 +6,8 @@ import "@styles/experiencies-content.css";
 
 // ✅ Recibe datos ya resueltos
 const { pageData, typeSpecificData, globalData } = Astro.props;
-const experiencies = typeSpecificData.experiencies || [];
+const experiencies = typeSpecificData.experiencias || [];
+
 const { categories } = globalData;
 
 const { lang, slug } = Astro.params;
