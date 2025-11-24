@@ -1,7 +1,5 @@
 ---
 // astro/src/components/RRSS.astro
-import { Picture } from 'astro:assets';
-
 // ✅ Recibe datos resueltos por props
 const { rrssData } = Astro.props;
 ---
@@ -9,7 +7,7 @@ const { rrssData } = Astro.props;
 <div class="flex flex-row justify-center items-center bg-primary p-2 gap-6 md:gap-4">
   {rrssData.map((red_social) => (
     <a href={red_social.link}>
-      <img src={red_social.imageUrl} alt={red_social.imageAlt} class="w-[30px] h-[30px]" />
+      <img src={red_social.imageUrl} alt={red_social.imageAlt} class="w-[35px] h-[35px]" />
     </a>
   ))}
 </div>
