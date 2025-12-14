@@ -93,6 +93,6 @@ const currentCategoryColors = categoryColors[currentCategory] ?? {
 <script>
   const activeSub = document.querySelector("#active-subcategory");
   if (activeSub) {
-    activeSub.scrollIntoView({ behavior: "smooth", block: "center" });
+    activeSub.scrollIntoView({ behavior: "smooth", block: "center", inline: "start" });
   }
 </script>
