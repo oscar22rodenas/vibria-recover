@@ -23,3 +23,36 @@ const { categories } = globalData;
         </a>
     </div>
 </article>
+
+<script>
+const content = document.querySelector('.experiencia-content');
+
+const nodes = Array.from(content.children);
+const wrapper = document.createElement('div');
+wrapper.className = 'experiencia-wrapper';
+
+let i = 0;
+
+while (i < nodes.length) {
+  const text = nodes[i];
+  const image = nodes[i + 1];
+
+  if (!text || !image) break;
+  if (text.tagName !== 'P' || image.tagName !== 'FIGURE') break;
+
+  const row = document.createElement('div');
+  row.className = 'fila';
+
+  if ((wrapper.children.length + 1) % 2 === 0) {
+    row.classList.add('reverse');
+    row.append(image, text);
+  } else {
+    row.append(text, image);
+  }
+
+  wrapper.appendChild(row);
+  i += 2;
+}
+
+content.prepend(wrapper);
+</script>

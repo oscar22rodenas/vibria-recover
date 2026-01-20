@@ -19,13 +19,13 @@ const { lang, slug } = Astro.params;
       
     <a href={oferta.link} class="flex flex-col justify-center items-center gap-2 mb-5 bg-gray-100 shadow-[0_4px_4px_rgba(0,0,0,0.25)] pt-4 pb-1">
       <div class="relative">
-        {oferta.imageUrl && <Picture formats={['webp', 'avif', 'jpeg']} src={oferta.imageUrl} alt={oferta.imageAlt} width="300" height="126" style="md:width 390px"/>}
+        {oferta.imageUrl && <Picture formats={['webp', 'avif', 'jpeg']} src={oferta.imageUrl} alt={oferta.imageAlt} width="300" height="126" />}
 
         <h4 class="absolute bottom-0 inset-x-16 text-h4 font-700 bg-red text-center text-white px-2">
           {oferta.title}
         </h4>
       </div>
-      <p class="text-sm px-4 text-black font-400 text-center">{oferta.text}</p>
+      <p class="text-sm px-4 flex-grow text-black font-400 text-center">{oferta.text}</p>
 
       <div class="flex flex-row items-center justify-evenly gap-8 w-full">
         <div class="flex flex-row items-center gap-1">
