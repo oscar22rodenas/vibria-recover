@@ -212,9 +212,16 @@ export async function getStaticPaths() {
                 case 'qui-som': {
                     // QuiSom tiene estructura especial con equipo
                     const quiSomData = await getQuiSomInfo(lang, slugCompleto);
+                    const data = quiSomData[0] || {};
                     typeSpecificData = { 
-                        pageContent: quiSomData[0]?.pageContent || '',
-                        teamMembers: quiSomData.map(item => item.content).filter(Boolean) || []
+                        teamMembers: data.quisom || [],           
+                        voluntaries: data.voluntaries || [],       
+                        pageContent: data.pageContent || '',
+                        titol1: data.titol1 || '',
+                        titol2: data.titol2 || '',
+                        text: data.text || '',
+                        buttonText: data.buttonText || '',
+                        buttonUrl: data.buttonUrl || '#'
                     };
                     break;
                 }

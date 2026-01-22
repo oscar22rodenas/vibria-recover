@@ -1,38 +1,134 @@
+.qui-som-content{
+    font-size: 0.875rem;
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 0 1rem 0;
+    gap: 1rem;
+    @media (min-width: 768px) {
+        padding: 2rem 0 1rem 0;
+      
+    }
+}
+
 .qui-som-content h2 {
   font-weight: 700;
-  font-size: 25px;
-  color: rgb(66, 115, 142);
-  margin-bottom: 10px;
+    font-size: 25px;
+    margin: 0.5rem 0;
+    color: #5DC695;
+    text-align: center;
+    display: none;
 
-  @media (min-width: 768px) {
-    font-weight: 800;
-    font-size: 30px;
-  }
+    @media (min-width: 768px) {
+        font-weight: 800;
+        font-size: 30px;
+        display: block;
+    }
 }
-.qui-som-content h3 {
-  margin-top: 10px;
+.qui-som-content a {
   font-weight: 700;
+  text-decoration: underline;
+  color: #5DC695;
 }
 
-.qui-som-content strong {
-  font-weight: 700;
+.qui-som-content p > a {
+  color: black;
 }
 
-
-.qui-som-content p {
-  margin-bottom: 0.75rem;
+p {
   font-weight: 400;
+  text-align: justify;
+}
 
+.qui-som-content .content-info-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.qui-som-content .content-figure-wrapper {
+    gap: 1rem;
+
+    @media (min-width: 768px) {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        justify-content: center;
+        align-items: stretch;
+        min-height: 350px;
+        gap: 2rem;
+    }
+
+}
+img {
+    width: 100%;
+    height: 100%;
+}
+
+.member-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+
+.wrapper-h2-figure {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  justify-content: center;
+  align-items: stretch;
+  gap: 1rem;
+}
+
+.wrapper-h2 {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  justify-content: center;
+  align-self: start;
+  height: 100%;
+}
+
+.wrapper-h2 :nth-child(1) {
+  color: #5DC695;
+  font-weight: 700;
+  font-size: x-large;
+}
+
+.wrapper-h2 :nth-child(2) {
+  color: black;
+  font-weight: 700;
+  font-size: x-large;
+  text-align: start;
+}
+
+.voluntary-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.voluntary-item figure {
   @media (min-width: 768px) {
-    font-size: 1rem;
-  }
-  .qui-som{
-    background-color: red;
-  }
-  @media (min-width: 780px) and (max-width: 1000px) {
-  .page-content {
-    width: 50%;
+    width: 80%;
   }
 }
 
+.voluntary-item h2 {
+  color: #5DC695;
+  font-weight: 700;
+  font-size: x-large;
+  width: 100%;
+  text-align: center;
+}
+
+.voluntary-item p {
+  width: 100%;
 }

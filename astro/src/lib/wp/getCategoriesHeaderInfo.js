@@ -1,7 +1,12 @@
 import { apiURL } from "./config.js";
 import { getPageById } from "./getPageById.js";
+import { categoriesHeaderCache } from './helpers.js';
 
 export const getCategoriesHeaderInfo = async (lang) => {
+  if (categoriesHeaderCache.has(lang)) {
+    return categoriesHeaderCache.get(lang);
+  }
+
   try {
     const response = await fetch(`${apiURL}/header?page=1&orderby=date&order=asc&_fields=title,acf,slug,id&per_page=500`);
     
@@ -33,6 +38,7 @@ export const getCategoriesHeaderInfo = async (lang) => {
       })
     );
 
+    categoriesHeaderCache.set(lang, headerMenusConDatos.filter(item => item !== null));
     // Filtrar elementos null del resultado
     return headerMenusConDatos.filter(item => item !== null);
     

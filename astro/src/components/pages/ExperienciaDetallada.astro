@@ -9,8 +9,8 @@ const { globalData, pageData, detailedData } = Astro.props;
 // Use detailedData for the specific experience
 const experiencia = detailedData;
 const { categories } = globalData;
-
 ---
+
 <CategoryNav lang={lang} slug={slug} categories={categories} />
 
 <article class="mx-auto bg-white p-4 space-y-4 md:px-12 lg:px-16 xl:px-20 md:mx-[15%]">
@@ -18,41 +18,123 @@ const { categories } = globalData;
     <div class="experiencia-content" set:html={pageData.content}></div>
 
     <div class="flex items-center justify-center mt-4">
-        <a href={experiencia.buttonUrl} class="bg-red text-white font-700 pb-1 px-2 before:text-center rounded-3xl shadow-[0_2px_4px_0_px_rgba(0,0,0,0.25)]">
+        <a href={experiencia.buttonUrl} class="bg-red text-white font-700 pb-1 px-2 text-center rounded-3xl shadow-[0_2px_4px_0_px_rgba(0,0,0,0.25)]">
            {experiencia.buttonText}
         </a>
     </div>
 </article>
 
 <script>
-const content = document.querySelector('.experiencia-content');
+document.addEventListener('DOMContentLoaded', () => {
+  const content = document.querySelector('.experiencia-content');
+  if (!content) return;
 
-const nodes = Array.from(content.children);
-const wrapper = document.createElement('div');
-wrapper.className = 'experiencia-wrapper';
+  // Solo reorganizar en desktop
+  const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+  if (!isDesktop) return;
 
-let i = 0;
-
-while (i < nodes.length) {
-  const text = nodes[i];
-  const image = nodes[i + 1];
-
-  if (!text || !image) break;
-  if (text.tagName !== 'P' || image.tagName !== 'FIGURE') break;
-
-  const row = document.createElement('div');
-  row.className = 'fila';
-
-  if ((wrapper.children.length + 1) % 2 === 0) {
-    row.classList.add('reverse');
-    row.append(image, text);
-  } else {
-    row.append(text, image);
+  // Obtener todos los hijos directos y clasificarlos
+  const children = Array.from(content.children);
+  
+  // Separar h2, divs con p/figure, y elementos sueltos
+  const headers = [];
+  const contentPairs = [];
+  
+  let i = 0;
+  while (i < children.length) {
+    const current = children[i];
+    
+    // Si es h2, guardarlo como header
+    if (current.tagName === 'H2') {
+      headers.push({ type: 'header', element: current, index: i });
+      i++;
+      continue;
+    }
+    
+    // Si es un DIV que contiene P y FIGURE
+    if (current.tagName === 'DIV') {
+      const innerP = current.querySelector('p');
+      const innerFigure = current.querySelector('figure');
+      
+      if (innerP && innerFigure) {
+        contentPairs.push({
+          type: 'pair',
+          text: innerP,
+          image: innerFigure,
+          originalDiv: current,
+          index: i
+        });
+        i++;
+        continue;
+      }
+    }
+    
+    // Si es P suelto seguido de FIGURE
+    if (current.tagName === 'P' && children[i + 1]?.tagName === 'FIGURE') {
+      contentPairs.push({
+        type: 'pair',
+        text: current,
+        image: children[i + 1],
+        index: i
+      });
+      i += 2;
+      continue;
+    }
+    
+    // Si es FIGURE seguido de P
+    if (current.tagName === 'FIGURE' && children[i + 1]?.tagName === 'P') {
+      contentPairs.push({
+        type: 'pair',
+        text: children[i + 1],
+        image: current,
+        index: i
+      });
+      i += 2;
+      continue;
+    }
+    
+    // Otros elementos (guardar como es)
+    contentPairs.push({
+      type: 'single',
+      element: current,
+      index: i
+    });
+    i++;
   }
 
-  wrapper.appendChild(row);
-  i += 2;
-}
+  // Crear el nuevo layout
+  const wrapper = document.createElement('div');
+  wrapper.className = 'experiencia-wrapper';
 
-content.prepend(wrapper);
+  // Reconstruir el contenido
+  let pairIndex = 0;
+  
+  contentPairs.forEach(item => {
+    if (item.type === 'pair') {
+      const row = document.createElement('div');
+      row.className = 'fila';
+      
+      // Alternar: par = texto-imagen, impar = imagen-texto
+      if (pairIndex % 2 === 0) {
+        row.appendChild(item.text.cloneNode(true));
+        row.appendChild(item.image.cloneNode(true));
+      } else {
+        row.className = 'fila reverse';
+        row.appendChild(item.image.cloneNode(true));
+        row.appendChild(item.text.cloneNode(true));
+      }
+      
+      wrapper.appendChild(row);
+      pairIndex++;
+    } else if (item.type === 'single') {
+      wrapper.appendChild(item.element.cloneNode(true));
+    }
+  });
+
+  // Insertar headers y wrapper
+  content.innerHTML = '';
+  headers.forEach(h => content.appendChild(h.element.cloneNode(true)));
+  content.appendChild(wrapper);
+});
+
 </script>

@@ -4,27 +4,150 @@ import "@styles/qui-som-content.css";
 
 const { pageData, typeSpecificData, globalData } = Astro.props;
 const { content: pageContent } = pageData;
-const { teamMembers } = typeSpecificData;
+const { teamMembers, voluntaries, titol1, titol2, text, buttonText, buttonUrl } = typeSpecificData;
 const { categories } = globalData;
 const { lang, slug } = Astro.params;
 ---
 
 <CategoryNav lang={lang} slug={slug} categories={categories} />
 
-<article class="max-w-4xl mx-auto bg-white p-4 space-y-8 md:mx-[15%]">
+<article class="mx-auto bg-white p-4 space-y-8 md:mx-[15%]">
   <!-- Contenido principal de la página -->
   {pageContent && 
-    <div class="qui-som page-content prose max-w-none" set:html={pageContent}></div>
+    <div class="qui-som-content" set:html={pageContent}></div>
   }
+
+  <h2 class="text-center text-2xl font-bold mb-4 text-white bg-[#5dc695] p-2 w-full">{titol1}</h2>
 
   <!-- Grid de miembros del equipo -->
   {teamMembers.length > 0 && (
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
       {teamMembers.map((member, index) => (
-        <div key={index} class="bg-gray-50 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-          <div class="content-item" set:html={member}></div>
-        </div>
+        <div key={index} class="member-item" set:html={member}></div>
       ))}
     </div>
   )}
+
+  <h2 class="text-center text-2xl font-bold mb-4 text-white bg-[#5dc695] p-2 w-full">{titol2}</h2>
+
+  <!-- Grid de voluntarios -->
+  {voluntaries && voluntaries.length > 0 && (
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-6 mt-8">
+      {voluntaries.map((voluntary, index) => (
+        <div key={index} class="voluntary-item" set:html={voluntary}></div>
+      ))}
+    </div>
+  )}
+  <div class="border border-[#5dc695] my-8">
+  {text && (
+      <p class="text-justify">{text}</p>
+  )}
+
+  {buttonText && buttonUrl && (
+    <div class="flex justify-center mt-4">
+      <a
+        href={buttonUrl}
+        class="bg-secondary text-white font-700 py-2 px-6 rounded-3xl shadow-md hover:shadow-lg transition-shadow"
+      >
+        {buttonText}
+      </a>
+    </div>
+  )}
+  </div>
 </article>
+
+<script>
+  const content = document.querySelector('.qui-som-content');
+  
+  if (content) {
+    // 1. Reemplazar <p><strong> por <a>
+    const strongElement = content.querySelector('p > strong');
+
+    if (strongElement) {
+      const parent = strongElement.parentElement;
+      
+      // Verificar que el <p> solo contenga el <strong> (sin otros nodos)
+      if (parent && parent.tagName === 'P' && parent.childNodes.length === 1) {
+        const link = document.createElement('a');
+        link.href = '/pdfs/leyenda_vibria.pdf'; // Cambia esta ruta
+        link.download = 'leyenda_vibria.pdf';
+        link.className = 'font-600 underline cursor-pointer';
+        link.textContent = strongElement.textContent;
+        // Reemplazar el <p> completo por el <a>
+        parent.replaceWith(link);
+      }
+    }
+
+    // 2. Envolver contenido entre h2 y figure en un div
+    const h2 = content.querySelector('h2');
+    const figure = content.querySelector('figure');
+    
+    if (h2 && figure) {
+      // Crear el div interno para el contenido entre h2 y figure
+      const innerWrapper = document.createElement('div');
+      innerWrapper.className = 'content-info-wrapper';
+      
+      let currentElement = h2.nextElementSibling;
+      const elementsToWrap = [];
+      
+      // Recolectar todos los elementos entre h2 y figure
+      while (currentElement && currentElement !== figure) {
+        elementsToWrap.push(currentElement);
+        currentElement = currentElement.nextElementSibling;
+      }
+      
+      // Insertar el div interno después del h2
+      h2.insertAdjacentElement('afterend', innerWrapper);
+      
+      // Mover los elementos al wrapper interno
+      elementsToWrap.forEach(el => innerWrapper.appendChild(el));
+      
+      // Crear el div externo que envuelve el div interno y el figure
+      const outerWrapper = document.createElement('div');
+      outerWrapper.className = 'content-figure-wrapper';
+      
+      // Insertar el div externo después del h2
+      h2.insertAdjacentElement('afterend', outerWrapper);
+      
+      // Mover el div interno y el figure dentro del div externo
+      outerWrapper.appendChild(innerWrapper);
+      outerWrapper.appendChild(figure);
+    }
+  }
+
+  // 3. En voluntary-item: envolver los dos h2 en un div, y ese div + figure en otro div
+  const contentQuiSom = document.querySelector('.member-item');
+  
+  if (contentQuiSom) {
+    const allH2 = contentQuiSom.querySelectorAll('h2');
+    const figure = contentQuiSom.querySelector('figure');
+    
+    if (allH2.length >= 2 && figure) {
+      const h2First = allH2[0];
+      const h2Second = allH2[1];
+      
+      // Crear div para envolver los dos h2
+      const h2Wrapper = document.createElement('div');
+      h2Wrapper.className = 'wrapper-h2';
+      
+      // Insertar el wrapper antes del primer h2
+      h2First.parentNode.insertBefore(h2Wrapper, h2First);
+      
+      // Mover ambos h2 dentro del wrapper
+      h2Wrapper.appendChild(h2First);
+      h2Wrapper.appendChild(h2Second);
+      
+      // Crear div externo para envolver h2Wrapper + figure
+      const outerWrapper = document.createElement('div');
+      outerWrapper.className = 'wrapper-h2-figure';
+      
+      // Insertar el wrapper externo antes del h2Wrapper
+      h2Wrapper.parentNode.insertBefore(outerWrapper, h2Wrapper);
+      
+      // Mover h2Wrapper y figure dentro del wrapper externo
+      outerWrapper.appendChild(figure);
+      outerWrapper.appendChild(h2Wrapper);
+    }
+  }
+
+</script>

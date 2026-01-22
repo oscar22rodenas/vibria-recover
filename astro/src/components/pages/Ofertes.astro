@@ -11,36 +11,70 @@ const { lang, slug } = Astro.params;
 
 <CategoryNav lang={lang} slug={slug} categories={categories} />
 
-<div class="text-red text-center text-h2 font-700 py-8 md:font-800 md:text-3xl md:mx-[15%]" set:html={pageData.content}></div>
+<article class="mx-auto bg-white p-4 space-y-4 md:mx-[15%]">
+  <div
+    class="text-red text-center text-h2 font-700 py-8 hidden md:font-800 md:text-3xl md:block"
+    set:html={pageData.content}
+  />
 
-<div class="p-6 grid grid-cols-1 gap-5 md:grid-cols-2 md:px-12 lg:px-16 xl:px-20 md:mx-[15%]">
-  {
-    ofertas.map((oferta) => (
-      
-    <a href={oferta.link} class="flex flex-col justify-center items-center gap-2 mb-5 bg-gray-100 shadow-[0_4px_4px_rgba(0,0,0,0.25)] pt-4 pb-1">
-      <div class="relative">
-        {oferta.imageUrl && <Picture formats={['webp', 'avif', 'jpeg']} src={oferta.imageUrl} alt={oferta.imageAlt} width="300" height="126" />}
+  <div
+    class="pb-6 grid grid-cols-1 gap-5 md:grid-cols-2 md:px-12 lg:px-16 xl:px-20"
+  >
+    {
+      ofertas.map((oferta) => (
+        <a
+          href={oferta.link}
+          class="flex flex-col justify-center items-center gap-2 mb-5 bg-gray-100 shadow-[0_4px_4px_rgba(0,0,0,0.25)] pt-4 pb-1"
+        >
+          <div class="relative">
+            {oferta.imageUrl && (
+              <Picture
+                formats={["webp", "avif", "jpeg"]}
+                src={oferta.imageUrl}
+                alt={oferta.imageAlt}
+                width="300"
+                height="126"
+              />
+            )}
 
-        <h4 class="absolute bottom-0 inset-x-16 text-h4 font-700 bg-red text-center text-white px-2">
-          {oferta.title}
-        </h4>
-      </div>
-      <p class="text-sm px-4 flex-grow text-black font-400 text-center">{oferta.text}</p>
+            <h4 class="absolute bottom-0 inset-x-16 text-h4 font-700 bg-red text-center text-white px-2">
+              {oferta.title}
+            </h4>
+          </div>
+          <p class="text-sm px-4 flex-grow text-black font-400 text-center">
+            {oferta.text}
+          </p>
 
-      <div class="flex flex-row items-center justify-evenly gap-8 w-full">
-        <div class="flex flex-row items-center gap-1">
-          <Picture formats={['webp', 'avif', 'jpeg']} src="/iconos/Ubicacion_Negro.png" alt="Ubicacion Icon" width="24" height="24"/>
-          <span class="text-sm text-black font-700">{oferta.ubicacion}</span>
-        </div>
-        <div class="flex flex-row items-center gap-1">
-          <Picture formats={['webp', 'avif', 'jpeg']} src="/iconos/Reloj_Arena_Negro.png" alt="Tiempo Icon" width="24" height="24"/>
-          <span class="text-sm text-black font-700">{oferta.fechas}</span>
-        </div>
-      </div>
+          <div class="flex flex-row items-center justify-evenly gap-8 w-full">
+            <div class="flex flex-row items-center gap-1">
+              <Picture
+                formats={["webp", "avif", "jpeg"]}
+                src="/iconos/Ubicacion_Negro.png"
+                alt="Ubicacion Icon"
+                width="24"
+                height="24"
+              />
+              <span class="text-sm text-black font-700">
+                {oferta.ubicacion}
+              </span>
+            </div>
+            <div class="flex flex-row items-center gap-1">
+              <Picture
+                formats={["webp", "avif", "jpeg"]}
+                src="/iconos/Reloj_Arena_Negro.png"
+                alt="Tiempo Icon"
+                width="24"
+                height="24"
+              />
+              <span class="text-sm text-black font-700">{oferta.fechas}</span>
+            </div>
+          </div>
 
-      <p class="border-t border-black text-center w-full pt-1 text-sm text-red font-400">
-        {oferta.dataLimit}
-      </p>
-    </a>
-  ))} 
-</div>
+          <p class="border-t border-black text-center w-full pt-1 text-sm text-red font-400">
+            {oferta.dataLimit}
+          </p>
+        </a>
+      ))
+    }
+  </div>
+</article>

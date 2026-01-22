@@ -15,52 +15,62 @@ const pin = Astro.url.searchParams.get("pin");
 
 // Filtrar experiencias según pin (lógica de cliente)
 const filteredExperiencies = pin
-    ? experiencies.filter(e => e.pinVoluntariat === pin || e.pinPais === pin)
-    : experiencies;
+  ? experiencies.filter((e) => e.pinVoluntariat === pin || e.pinPais === pin)
+  : experiencies;
 ---
 
 <CategoryNav lang={lang} slug={slug} categories={categories} />
-    
-<div class="experiencies-content md:mx-[15%]" set:html={pageData.content}></div>
 
-<div class="p-4 grid grid-cols-1 gap-5 md:grid-cols-2 md:mx-[15%]">
-  {
-    filteredExperiencies.map((experiencia) => (
-      <div id="card" class="flex flex-col justify-center items-center gap-2 pb-2 mb-5 bg-gray-100 shadow-[0_4px_4px_rgba(0,0,0,0.25)] lg:mb-0" data-voluntariat={experiencia.pinVoluntariat} data-pais={experiencia.pinPais}>
-        <a href={experiencia.link} class="flex flex-col items-center pt-1  px-4">
-          <h4 class="text-h4 font-700 text-red text-center px-2">
-            {experiencia.title}
-          </h4>
-          <Picture
-            formats={["webp", "avif", "jpeg"]}
-            src={experiencia.imageUrl}
-            alt={experiencia.imageAlt}
-            width="326"
-            height="126"
-          />
+<article class="mx-auto bg-white p-4 space-y-4 md:mx-[15%]">
+  <div class="experiencies-content" set:html={pageData.content} />
 
-          <p class="text-sm text-black font-normal text-center lg:text-[15px] lg:px-4 lg:py-0">
-            {experiencia.text}
-          </p>
-        </a>
-        <div class="flex justify-center flex-row gap-x-4 gap-y-2 px-4 whitespace-nowrap text-center">
+  <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+    {
+      filteredExperiencies.map((experiencia) => (
+        <div
+          id="card"
+          class="flex flex-col justify-center items-center gap-2 pb-2 mb-5 bg-gray-100 shadow-[0_4px_4px_rgba(0,0,0,0.25)] lg:mb-0"
+          data-voluntariat={experiencia.pinVoluntariat}
+          data-pais={experiencia.pinPais}
+        >
           <a
-            href={`/${lang}/${slug}?pin=${experiencia.pinVoluntariat}`}
-            class="bg-red text-sm text-white font-700 py-0.5 px-2 rounded-3xl"
+            href={experiencia.link}
+            class="flex flex-col items-center pt-1  px-4"
           >
-            {experiencia.pinVoluntariat}
+            <h4 class="text-h4 font-700 text-red text-center px-2">
+              {experiencia.title}
+            </h4>
+            <Picture
+              formats={["webp", "avif", "jpeg"]}
+              src={experiencia.imageUrl}
+              alt={experiencia.imageAlt}
+              width="326"
+              height="126"
+            />
+
+            <p class="text-sm text-black font-normal text-center lg:text-[15px] lg:px-4 lg:py-0">
+              {experiencia.text}
+            </p>
           </a>
-          <a
-            href={`/${lang}/${slug}?pin=${experiencia.pinPais}`}
-            class="bg-red text-sm text-white font-700 py-0.5 px-2 rounded-3xl "
-          >
-            {experiencia.pinPais}
-          </a>
+          <div class="flex justify-center flex-row gap-x-4 gap-y-2 px-4 whitespace-nowrap text-center">
+            <a
+              href={`/${lang}/${slug}?pin=${experiencia.pinVoluntariat}`}
+              class="bg-red text-sm text-white font-700 py-0.5 px-2 rounded-3xl"
+            >
+              {experiencia.pinVoluntariat}
+            </a>
+            <a
+              href={`/${lang}/${slug}?pin=${experiencia.pinPais}`}
+              class="bg-red text-sm text-white font-700 py-0.5 px-2 rounded-3xl "
+            >
+              {experiencia.pinPais}
+            </a>
+          </div>
         </div>
-      </div>
-    ))
-  }
-</div>
+      ))
+    }
+  </div>
+</article>
 
 <script is:inline>
   const params = new URLSearchParams(window.location.search);
@@ -69,7 +79,7 @@ const filteredExperiencies = pin
   if (pin) {
     const cards = document.querySelectorAll("#card");
 
-    cards.forEach(card => {
+    cards.forEach((card) => {
       const voluntariat = card.dataset.voluntariat?.toLowerCase();
       const pais = card.dataset.pais?.toLowerCase();
       const match = voluntariat === pin || pais === pin;
@@ -78,4 +88,3 @@ const filteredExperiencies = pin
     });
   }
 </script>
-

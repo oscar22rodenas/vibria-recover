@@ -3,7 +3,6 @@
   line-height: 1.5;
   display: flex;
   flex-direction: column;
-
 }
 
 .oferta-content h2 {
@@ -60,4 +59,10 @@
 .oferta-content div ol li {
   line-height: normal;
   font-weight: 400;
+}
+
+.oferta-content a {
+  color: #000000;
+  text-decoration: underline;
+  font-weight: 700;
 }

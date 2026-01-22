@@ -3,12 +3,6 @@ import { getPageById } from "./getPageById.js";
 
 export const getExperienciaDetalladaInfo = async (slug) => {
   try {    
-    const responseExperiencia = await fetch(`${apiURL}/experiencies-ve?slug=${slug}&_fields=acf`);
-    if (!responseExperiencia.ok) {
-      throw new Error("Error al obtener la experiencia");
-    }
-    const [experienciaData] = await responseExperiencia.json();
-
     const responsePage = await fetch(`${apiURL}/pages?slug=${slug}&_fields=acf,content`);
     if (!responsePage.ok) {
       throw new Error("Error al obtener la página");

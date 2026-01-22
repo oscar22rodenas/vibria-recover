@@ -9,11 +9,12 @@
     margin: 0.5rem 0;
     color: #D3133A;
     text-align: center;
+    display: none;
 
     @media (min-width: 768px) {
         font-weight: 800;
         font-size: 30px;
-        
+        display: block;
     }
 }
 

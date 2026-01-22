@@ -23,7 +23,7 @@ const { categories } = globalData;
       alt={oferta.imageAlt}
       width="300"
       height="118"
-      class="mx-auto"
+      class="mx-auto w-full h-auto"
     />}
 
     <div class="flex items-center gap-2 text-sm mt-2">
@@ -59,3 +59,52 @@ const { categories } = globalData;
     </a>
   </div>
 </article>
+
+<script>
+  function setupContentLinks() {
+    const content = document.querySelector('.oferta-content');
+    if (!content) return;
+
+    // 1. Buscar el <strong> dentro del primer <li> de un <ol class="wp-block-list"> dentro de .wp-block-group
+    // Esto será el enlace de registro (independiente del idioma)
+    const wpBlockGroup = content.querySelector('.wp-block-group');
+    if (wpBlockGroup) {
+      const firstLi = wpBlockGroup.querySelector('ol.wp-block-list > li:first-child');
+      if (firstLi) {
+        const strong = firstLi.querySelector('strong');
+        if (strong && !strong.querySelector('a')) {
+          const link = document.createElement('a');
+          link.href = 'https://youth.europa.eu/solidarity/young-people/volunteering_es';
+          link.target = '_blank';
+          link.className = 'text-red font-600 underline';
+          link.textContent = strong.textContent;
+          strong.replaceWith(link);
+        }
+      }
+    }
+
+    // 2. Buscar el párrafo con <strong> que está antes del .wp-block-group
+    // Este será el enlace de descarga del infopack
+    const allParagraphs = content.querySelectorAll('p > strong');
+    allParagraphs.forEach(strong => {
+      // Verificar que el siguiente elemento sea .wp-block-group
+      const parent = strong.parentElement;
+      const nextSibling = parent?.nextElementSibling;
+      
+      if (nextSibling && nextSibling.classList.contains('wp-block-group') && !strong.querySelector('a')) {
+        const link = document.createElement('a');
+        link.href = '/pdfs/infopack.pdf'; // Cambia esta ruta
+        link.download = 'infopack.pdf';
+        link.className = 'text-red font-600 underline cursor-pointer';
+        link.textContent = strong.textContent;
+        strong.replaceWith(link);
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupContentLinks);
+  } else {
+    setupContentLinks();
+  }
+</script>
