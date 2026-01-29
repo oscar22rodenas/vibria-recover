@@ -26,135 +26,44 @@ import Refore from "@components/pages/Refore.astro";
 import Sending from "@components/pages/Sending.astro";
 import Volunteer from "@components/pages/Volunteer.astro";
 import { extractLang } from "@wp/extractLang.js";
-import { apiURL } from "@wp/config.js";
 import { 
-    getPostsInfo, 
-    getImageInfo, 
-    getCategoriesInfo, 
-    getRRSSInfo,
+    getImageInfo,
     getSlidesInfo,
     getExperienciesInfo,
     getOfertesInfo,
     getExperienciesErasmusInfo,
     getIntercanvisJuvenilInfo,
-    getQuiSomInfo,
-    getCategoriesHeaderInfo
+    getQuiSomInfo
 } from "@wp/index.js";
+import { getGlobalData, getAllPages } from "@wp/sharedBuildData.js";
 
 export async function getStaticPaths() {
     const languages = ["ca", "es", "en"];
     
-    console.log("🚀 Iniciando build optimizado...");
+    console.log("🚀 [SLUG] Building main pages...");
     const startTime = Date.now();
     
     // ============================================
-    // PASO 1: FETCHEAR DATOS GLOBALES (1 vez por idioma)
+    // ✅ OPTIMIZACIÓN 2: Datos globales cacheados
     // ============================================
-    console.log("📡 Fetching global data...");
-    
-    const globalDataPromises = languages.map(async (lang) => {
-        // Fetchear ACF de header, footer, categorías y RRSS en paralelo
-        const [rawHeaderACF, rawFooterACF, categories, rrssRaw, headerLinks] = await Promise.all([
-            getPostsInfo("header", lang),
-            getPostsInfo("footer", lang),
-            getCategoriesInfo(lang),
-            getRRSSInfo(),
-            getCategoriesHeaderInfo(lang)
-        ]);
-        
-        const headerACF = rawHeaderACF || {};
-        const footerACF = rawFooterACF || {};
-        
-        // Resolver imagen del header
-        const headerImage = headerACF.header_imagen 
-            ? await getImageInfo(headerACF.header_imagen)
-            : null;
-        
-        // Resolver imágenes del footer en paralelo
-        const footerImageIds = [
-            footerACF.ubicacion_imagen,
-            footerACF.telefono_imagen,
-            footerACF.correo_imagen
-        ].filter(Boolean);
-        
-        const footerImages = await Promise.all(
-            footerImageIds.map(id => getImageInfo(id))
-        );
-        
-        // Resolver imágenes de RRSS en paralelo
-        const rrssWithImages = await Promise.all(
-            (rrssRaw || []).map(async (red) => {
-                if (red.imageId) {
-                    const img = await getImageInfo(red.imageId);
-                    return {
-                        link: red.link,
-                        imageUrl: img.source_url || "",
-                        imageAlt: img.alt_text || red.title || "Red social"
-                    };
-                }
-                return {
-                    link: red.link,
-                    imageUrl: red.imageUrl || "",
-                    imageAlt: red.imageAlt || red.title || "Red social"
-                };
-            })
-        );
-        
-        return {
-            lang,
-            header: {
-                ...headerACF,
-                imageUrl: headerImage?.source_url || "",
-                imageAlt: headerImage?.alt_text || "Logo Vibria"
-            },
-            footer: {
-                ...footerACF,
-                ubicacionImage: { 
-                    url: footerImages[0]?.source_url || "", 
-                    alt: footerImages[0]?.alt_text || "Ubicación" 
-                },
-                telefonoImage: { 
-                    url: footerImages[1]?.source_url || "", 
-                    alt: footerImages[1]?.alt_text || "Teléfono" 
-                },
-                correoImage: { 
-                    url: footerImages[2]?.source_url || "", 
-                    alt: footerImages[2]?.alt_text || "Correo" 
-                }
-            },
-            categories,
-            rrss: rrssWithImages,
-            headerLinks
-        };
-    });
-    
-    const globalDataArray = await Promise.all(globalDataPromises);
-    
-    // Convertir array a objeto indexado por idioma
-    const globalData = Object.fromEntries(
-        globalDataArray.map(data => [data.lang, data])
-    );
-    
-    console.log(`✅ Global data fetched in ${Date.now() - startTime}ms`);
+    const globalData = await getGlobalData();
+    console.log(`✅ [${Date.now() - startTime}ms] Global data ready`);
     
     // ============================================
-    // PASO 2: FETCHEAR TODAS LAS PÁGINAS
+    // ✅ OPTIMIZACIÓN 3: Páginas cacheadas
     // ============================================
-    console.log("📡 Fetching all pages...");
+    const allPages = await getAllPages();
     
-    const pagesRes = await fetch(
-        `${apiURL}/pages?per_page=100&_fields=slug,acf,content`
-    );
-    const allPages = await pagesRes.json();
-    
-    console.log(`✅ ${allPages.length} pages fetched`);
+    // ✅ FILTRAR: Solo páginas SIN categoría (van a [slug])
+    const mainPages = allPages.filter(page => !page.acf?.categoria);
+    console.log(`✅ [${Date.now() - startTime}ms] Found ${mainPages.length} main pages`);
     
     // ============================================
-    // PASO 3: RESOLVER DATOS ESPECÍFICOS POR TIPO DE PÁGINA
+    // PASO 3: Resolver datos específicos por página
     // ============================================
     console.log("📡 Resolving page-specific data in parallel...");
     
-    const pathsPromises = allPages.map(async (page) => {
+    const pathsPromises = mainPages.map(async (page) => {
         const extracted = extractLang(page.slug);
         if (!extracted || !languages.includes(extracted.lang)) {
             return null;
@@ -163,56 +72,53 @@ export async function getStaticPaths() {
         const { lang, baseSlug } = extracted;
         const slugCompleto = page.slug;
         
-        // Páginas con categoría son detalladas (ofertes/*, experiencies/*)
-        if (page.acf.categoria) {
-            return null; // Las manejaremos en [subslug].astro
-        }
-        
-        // Determinar tipo de página y resolver sus datos específicos
-        let typeSpecificData = {}; // Initialize as empty object
+        let typeSpecificData = {};
         
         try {
             switch (baseSlug) {
                 case 'home': {
-                    // Resolver slides con imágenes
                     const difusionImagenes = await getImageInfo(page.acf.difusion_imagen);
                     const slidesRaw = await getSlidesInfo(lang);
-                    typeSpecificData = { slides: slidesRaw, difusionImagenes: difusionImagenes || [] };
+                    console.log(`⏱️ home [${lang}] done in ${Date.now() - startTime}ms`);
+                    typeSpecificData = { 
+                        slides: slidesRaw, 
+                        difusionImagenes: difusionImagenes || [] 
+                    };
                     break;
                 }
                 
                 case 'experiencies': {
-                    // Resolver experiencias con imágenes
                     const experiencias = await getExperienciesInfo(lang, slugCompleto);
+                    console.log(`⏱️ experiencies [${lang}] done in ${Date.now() - startTime}ms`);
                     typeSpecificData = { experiencias: experiencias || [] };
                     break;
                 }
                 
                 case 'ofertes': {
-                    // Resolver ofertas con imágenes
                     const ofertas = await getOfertesInfo(lang);
+                    console.log(`⏱️ ofertes [${lang}] done in ${Date.now() - startTime}ms`);
                     typeSpecificData = { ofertas: ofertas || [] };
                     break;
                 }
                 
                 case 'erasmus-experiencies': {
-                    // Resolver experiencias Erasmus
                     const experiencias = await getExperienciesErasmusInfo(lang);
+                    console.log(`⏱️ erasmus-experiencies [${lang}] done in ${Date.now() - startTime}ms`);
                     typeSpecificData = { experiencias: experiencias || [] };
                     break;
                 }
                 
                 case 'intercanvis-juvenil': {
-                    // Resolver intercambios juveniles
                     const experiencias = await getIntercanvisJuvenilInfo(lang);
+                    console.log(`⏱️ intercanvis-juvenil [${lang}] done in ${Date.now() - startTime}ms`);
                     typeSpecificData = { experiencias: experiencias || [] };
                     break;
                 }
                 
                 case 'qui-som': {
-                    // QuiSom tiene estructura especial con equipo
                     const quiSomData = await getQuiSomInfo(lang, slugCompleto);
                     const data = quiSomData[0] || {};
+                    console.log(`⏱️ qui-som [${lang}] done in ${Date.now() - startTime}ms`);
                     typeSpecificData = { 
                         teamMembers: data.quisom || [],           
                         voluntaries: data.voluntaries || [],       
@@ -226,14 +132,13 @@ export async function getStaticPaths() {
                     break;
                 }
                 
-                // Páginas simples: solo necesitan su content
-                // No necesitan typeSpecificData adicional
                 default:
+                    // Páginas simples sin datos extra
                     break;
             }
         } catch (error) {
             console.error(`❌ Error resolving data for ${baseSlug}:`, error.message);
-            typeSpecificData = {}; // On error, ensure it's an empty object
+            typeSpecificData = {};
         }
         
         return {
@@ -252,10 +157,9 @@ export async function getStaticPaths() {
     
     const paths = (await Promise.all(pathsPromises)).filter(Boolean);
     
-    const endTime = Date.now();
-    const duration = ((endTime - startTime) / 1000).toFixed(2);
+    const duration = ((Date.now() - startTime) / 1000).toFixed(2);
     
-    console.log(`✅ Build completed: ${paths.length} pages in ${duration}s`);
+    console.log(`✅ [SLUG] Build completed: ${paths.length} pages in ${duration}s`);
     console.log(`⚡ Average: ${(duration / paths.length).toFixed(2)}s per page`);
     
     return paths;
@@ -266,82 +170,41 @@ const { globalData, pageData, typeSpecificData } = Astro.props;
 let PageComponent;
 
 switch (Astro.params.slug) {
-    case "acollida":
-        PageComponent = Acollida;
-        break;
-    case "assessories":
-        PageComponent = Assessories;
-        break;
-    case "baumann":
-        PageComponent = Baumann;
-        break;
-    case "diaris-voluntaries":
-        PageComponent = DiarisVoluntaries;
-        break;
-    case "enviament":
-        PageComponent = Enviament;
-        break;
-    case "erasmus-experiencies":
-        PageComponent = ErasmusExperiencies;
-        break;
-    case "experiencies-pi":
-        PageComponent = ExperienciesPi;
-        break;
-    case "experiencies":
-        PageComponent = Experiencies;
-        break;
-    case "formacions":
-        PageComponent = Formacions;
-        break;
-    case "greenfluencers":
-        PageComponent = Greenfluencers;
-        break;
-    case "home":
-        PageComponent = Home;
-        break;
-    case "intercanvis-juvenil":
-        PageComponent = IntercanvisJuvenil;
-        break;
-    case "mentor-voluntaries":
-        PageComponent = MentorVoluntaries;
-        break;
-    case "ocell-foc":
-        PageComponent = OcellFoc;
-        break;
-    case "ofertes":
-        PageComponent = Ofertes;
-        break;
-    case "playground":
-        PageComponent = Playground;
-        break;
-    case "projectes-passats":
-        PageComponent = ProjectesPassats;
-        break;
-    case "que-es":
-        PageComponent = QueEs;
-        break;
-    case "que-fem":
-        PageComponent = QueFem;
-        break;
-    case "qui-som":
-        PageComponent = QuiSom;
-        break;
-    case "radio-vibria":
-        PageComponent = RadioVibria;
-        break;
-    case "refore":
-        PageComponent = Refore;
-        break;
-    case "sending":
-        PageComponent = Sending;
-        break;
-    case "volunteer":
-        PageComponent = Volunteer;
-        break;
-    default :
-        break;
+    case "acollida": PageComponent = Acollida; break;
+    case "assessories": PageComponent = Assessories; break;
+    case "baumann": PageComponent = Baumann; break;
+    case "diaris-voluntaries": PageComponent = DiarisVoluntaries; break;
+    case "enviament": PageComponent = Enviament; break;
+    case "erasmus-experiencies": PageComponent = ErasmusExperiencies; break;
+    case "experiencies-pi": PageComponent = ExperienciesPi; break;
+    case "experiencies": PageComponent = Experiencies; break;
+    case "formacions": PageComponent = Formacions; break;
+    case "greenfluencers": PageComponent = Greenfluencers; break;
+    case "home": PageComponent = Home; break;
+    case "intercanvis-juvenil": PageComponent = IntercanvisJuvenil; break;
+    case "mentor-voluntaries": PageComponent = MentorVoluntaries; break;
+    case "ocell-foc": PageComponent = OcellFoc; break;
+    case "ofertes": PageComponent = Ofertes; break;
+    case "playground": PageComponent = Playground; break;
+    case "projectes-passats": PageComponent = ProjectesPassats; break;
+    case "que-es": PageComponent = QueEs; break;
+    case "que-fem": PageComponent = QueFem; break;
+    case "qui-som": PageComponent = QuiSom; break;
+    case "radio-vibria": PageComponent = RadioVibria; break;
+    case "refore": PageComponent = Refore; break;
+    case "sending": PageComponent = Sending; break;
+    case "volunteer": PageComponent = Volunteer; break;
+    default: break;
 }
 ---
 <Layout globalData={globalData}>
-    {PageComponent ? <PageComponent pageData={pageData} typeSpecificData={typeSpecificData} globalData={globalData} /> : <div>Page not found</div>}
+    {PageComponent ? (
+        <PageComponent 
+            pageData={pageData} 
+            typeSpecificData={typeSpecificData} 
+            globalData={globalData} 
+        />
+    ) : (
+        <div>Page not found</div>
+    )}
 </Layout>

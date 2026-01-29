@@ -1,65 +1,106 @@
 import { apiURL } from "./config.js";
 import { getImageInfo } from "./getImageInfo.js";
-import { extractLang } from "./extractLang.js"; // Assuming this is needed for filtering by language
+import { extractLang } from "./extractLang.js";
+import { getPagesByIds } from "./getPageById.js";
 
 export async function getExperienciesErasmusInfo(lang) {
   try {
-    const response = await fetch(`${apiURL}/experiencies_erasmus?order=asc&_fields=acf,slug`);
+    // ============================================
+    // PASO 1: Fetchear TODO en paralelo
+    // ============================================
+    const [experienciesResponse, pageResponse] = await Promise.all([
+      fetch(`${apiURL}/experiencies_erasmus?order=asc&_fields=acf,slug`),
+      fetch(`${apiURL}/pages?slug=erasmus-experiencies-${lang}&_fields=content`)
+    ]);
     
-    if (!response.ok) {
-      console.error(`❌ Error fetching experiencies_erasmus: ${response.status} - ${response.statusText}`);
-      return []; // Return empty array on fetch error
+    if (!experienciesResponse.ok) {
+      console.error(`❌ Error fetching experiencies_erasmus: ${experienciesResponse.status}`);
+      return [];
     }
     
-    const data = await response.json();
+    if (!pageResponse.ok) {
+      console.error(`❌ Error fetching erasmus-experiencies page: ${pageResponse.status}`);
+      return [];
+    }
+    
+    const [data, pageDataArray] = await Promise.all([
+      experienciesResponse.json(),
+      pageResponse.json()
+    ]);
 
-    // Ensure data is an array before filtering
     if (!Array.isArray(data)) {
-        console.warn(`⚠️ getExperienciesErasmusInfo: Expected an array from API, but received:`, data);
-        return [];
+      console.warn(`⚠️ getExperienciesErasmusInfo: Expected array, got:`, data);
+      return [];
     }
 
-    const responsePage = await fetch(`${apiURL}/pages?slug=erasmus-experiencies-${lang}&_fields=content`);
-    
-    if (!responsePage.ok) {
-      console.error(`❌ Error fetching erasmus-experiencies page for lang ${lang}: ${responsePage.status} - ${responsePage.statusText}`);
-      return []; // Return empty array on fetch error for the page content
-    }
-    
-    const [pageDataInfo] = await responsePage.json();
+    const [pageDataInfo] = pageDataArray;
 
+    // ============================================
+    // PASO 2: Filtrar por idioma
+    // ============================================
     const experienciaFiltrados = data.filter(experiencia => {
-        const extracted = extractLang(experiencia.slug);
-        return extracted && extracted.lang === lang;
+      const extracted = extractLang(experiencia.slug);
+      return extracted && extracted.lang === lang;
     });
+
+    // ============================================
+    // PASO 3: Recopilar TODOS los IDs
+    // ============================================
+    const imageIds = [];
+    const pageIds = [];
+
+    experienciaFiltrados.forEach((experiencia) => {
+      const { acf } = experiencia;
+      
+      imageIds.push(acf?.experiencia_imagen || null);
+      pageIds.push(acf?.experiencia_link || null);
+    });
+
+    // ============================================
+    // PASO 4: Fetchear TODO en paralelo
+    // ============================================
+    const [images, pages] = await Promise.all([
+      Promise.all(imageIds.map(id => id ? getImageInfo(id) : Promise.resolve(null))),
+      getPagesByIds(pageIds.filter(Boolean)) // ✅ Usa la nueva función batch
+    ]);
+
+    // Reconstruir array completo de páginas (incluyendo nulls)
+    let pageIndex = 0;
+    const pagesWithNulls = pageIds.map(id => {
+      if (id === null) return null;
+      return pages[pageIndex++];
+    });
+
+    // ============================================
+    // PASO 5: Construir resultado
+    // ============================================
+    const experienciaConDatos = experienciaFiltrados.map((experiencia, index) => {
+      const { acf } = experiencia;
+      
+      if (!acf) {
+        console.warn(`Experiencia Erasmus sin ACF: ${experiencia.slug}`);
+        return null;
+      }
+
+      const imageData = images[index];
+      const pageData = pagesWithNulls[index];
+
+      return {
+        title: acf.experiencia_titulo || "",
+        text: acf.experiencia_texto || "",
+        ubicacion: acf.experiencia_ubicacion || "",
+        fechas: acf.experiencia_fechas || "",
+        dataLimit: acf.experiencia_data_limit || "",
+        link: pageData ? `/${pageData.lang}${pageData.categoriaSlug}/${pageData.baseSlug}` : "#",
+        imageUrl: imageData?.source_url || "",
+        imageAlt: imageData?.alt_text || "Experiencia Erasmus image",
+        content: pageDataInfo?.content?.rendered || "",
+      };
+    });
+
+    return experienciaConDatos.filter(Boolean);
     
-    const experienciaConDatos = await Promise.all(
-      experienciaFiltrados.map(async (experiencia) => {
-        const { acf } = experiencia;
-        if (!acf) {
-          console.warn(`Experiencia Erasmus sin datos ACF: ${experiencia.slug}`);
-          return null;
-        }
-
-        const imageData = acf.experiencia_imagen ? await getImageInfo(acf.experiencia_imagen) : null;
-        const pageData = acf.experiencia_link ? await getPageById(acf.experiencia_link) : null; // Assuming getPageById exists and works
-
-        return {
-          title: acf.experiencia_titulo || "",
-          text: acf.experiencia_texto || "",
-          ubicacion: acf.experiencia_ubicacion || "",
-          fechas: acf.experiencia_fechas || "",
-          dataLimit: acf.experiencia_data_limit || "",
-          link: pageData ? `/${pageData.lang}${pageData.categoriaSlug}/${pageData.baseSlug}` : "#",
-          imageUrl: imageData?.source_url || "",
-          imageAlt: imageData?.alt_text || "Experiencia Erasmus image",
-          content: pageDataInfo?.content?.rendered || "",
-        };
-      })
-    );
-  return experienciaConDatos.filter(Boolean); // Filter out any nulls
-  } 
-  catch (error) {
+  } catch (error) {
     console.error("❌ Global error in getExperienciesErasmusInfo:", error.message);
     return [];
   }
