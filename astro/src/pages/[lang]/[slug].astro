@@ -35,6 +35,7 @@ import {
     getSlidesInfo,
     getExperienciesInfo,
     getOfertesInfo,
+    getDiarisVoluntariesInfo,
     getExperienciesErasmusInfo,
     getIntercanvisJuvenilInfo,
     getQuiSomInfo,
@@ -192,6 +193,17 @@ export async function getStaticPaths() {
                     // Resolver ofertas con imágenes
                     const ofertas = await getOfertesInfo(lang);
                     typeSpecificData = { ofertas: ofertas || [] };
+                    break;
+                }
+                case 'diaris-voluntaries': {
+                    // Llamamos a la función que creamos en config.js/index.js
+                    const diarisData = await getDiarisVoluntariesInfo(lang, slugCompleto);
+                    // Guardamos los años y los diarios en typeSpecificData
+                    // para que lleguen como props al componente final
+                    typeSpecificData = { 
+                        anys: diarisData.anys || [], 
+                        diaris: diarisData.diaris || [] 
+                        };
                     break;
                 }
                 
