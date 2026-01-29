@@ -1,58 +1,79 @@
-
 .volunteer-content h2 {
   font-weight: 700;
   font-size: 25px;
-  color: rgb(66, 115, 142);
+  color: #D3133A;
   margin-bottom: 10px;
+  display: none;
 
   @media (min-width: 768px) {
       font-weight: 800;
       font-size: 30px;
-      
+      display: block;
   }
 }
-.volunteer-content h3{
-  margin-top: 10px;
-  font-weight: 700;
+
+.volunteer-content p {
+  margin-bottom: 0.75rem;
+  font-weight: 400;
+  text-align: justify;
+
+  @media (min-width: 768px) {
+      font-size: 1rem;
+  }
+}
+
+.general-wrapper-images, .general-wrapper-text {
+  @media (min-width: 768px) {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      justify-items: center;
+      gap: 2rem;
+  }
+}
+
+.wrapper-images-1, .wrapper-images-2 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 .volunteer-content strong {
   font-weight: 700;
 }
 
-.volunteer-content p {
-  margin-bottom: 0.75rem;
-  font-weight: 400;
-
-  @media (min-width: 768px) {
-      font-size: 1rem;
-  }
+.wrapper-images-1 img, .wrapper-images-2 img {
+  width: 100%;
+  height: auto;
 }
-.wp-block-gallery {
+
+.text-wrapper {
   display: flex;
-  gap: 2rem;
-  margin: 0 auto;
-  padding: 2rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
-.volunteer-content figure {
+.link-wrapper {
   display: flex;
   justify-content: center;
-  border-radius: 12px;
-  padding: 2rem;
-  text-align: center;
+  margin-top: 1rem;
   margin-bottom: 1rem;
+  width: 100%;
 }
-@media (max-width: 750px) {
-  .volunteer-content figure {
-    padding: 0;
-    flex-direction: column;
-  }
-  .volunteer-content iframe {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 16/9;
-    display: block;
-  }
 
+.link-wrapper a {
+  background-color: #D3133A;
+  width: 100%;
+  text-align: center;
+  color: white;
+  font-weight: 700;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-radius: 1.875rem;
+  text-decoration: none;
 }

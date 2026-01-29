@@ -28,3 +28,4 @@ export { getRadioVibriaInfo } from "./getRadioVibriaInfo.js";
 export { getReforeInfo } from "./getReforeInfo.js";
 export { getSendingInfo } from "./getSendingInfo.js";
 export { getVolunteerInfo } from "./getVolunteerInfo.js";
+export { getVolunteerDetalladaInfo } from "./getVolunteerDetalladaInfo.js";
