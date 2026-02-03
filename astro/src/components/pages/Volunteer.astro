@@ -10,7 +10,7 @@ const { lang, slug } = Astro.params;
 
 <CategoryNav lang={lang} slug={slug} categories={categories} />
 
-<article class="mx-auto bg-white p-4 space-y-4 flex md:mx-[15%]">
+<article class="mx-auto bg-white p-4 space-y-4 md:mx-[15%]">
     
   <div class="volunteer-content" set:html={content}></div>
 
@@ -23,10 +23,27 @@ const { lang, slug } = Astro.params;
   const allFigures = Array.from(content.querySelectorAll('figure'));
   
   if (allStrongs.length >= 2) {
+    // Extraer los dos primeros strongs de sus <p> padres
+    const strong1 = allStrongs[0];
+    const strong2 = allStrongs[1];
+    
+    // Si strong1 está dentro de un <p>, extraerlo y eliminar el <p>
+    if (strong1.parentNode.tagName === 'P') {
+      const p1 = strong1.parentNode;
+      p1.parentNode.insertBefore(strong1, p1);
+      p1.remove();
+    }
+    
+    // Si strong2 está dentro de un <p>, extraerlo y eliminar el <p>
+    if (strong2.parentNode.tagName === 'P') {
+      const p2 = strong2.parentNode;
+      p2.parentNode.insertBefore(strong2, p2);
+      p2.remove();
+    }
+    
     // ============================================
     // SECCIÓN 1: Primer strong + 3 figures
     // ============================================
-    const strong1 = allStrongs[0];
     const figures1 = allFigures.slice(0, 3);
     
     const div1 = document.createElement('div');
@@ -38,8 +55,7 @@ const { lang, slug } = Astro.params;
     // ============================================
     // SECCIÓN 2: Segundo strong + 3 figures
     // ============================================
-    const strong2 = allStrongs[1];
-    const figures2 = allFigures.slice(3, 6); // Los siguientes 3
+    const figures2 = allFigures.slice(3, 6);
     
     const div2 = document.createElement('div');
     div2.className = 'wrapper-images-2';
@@ -60,13 +76,16 @@ const { lang, slug } = Astro.params;
   // ============================================
   // SECCIÓN 3: Figure restante + 3 p + 1 a (dentro de p)
   // ============================================
-  const remainingFigure = content.querySelector('figure');
+  const remainingFigure = allFigures[6];
+
   if (remainingFigure) {
     const allPs = Array.from(content.querySelectorAll('p'));
+
+    // Tomar solo los últimos 4 p (las 3 p + la p > a)
+    const lastFourPs = allPs.slice(-4);
     
-    if (allPs.length === 4) {
       // Buscar el <p> que contiene un <a> y reemplazarlo por un <div>
-      const lastP = allPs[allPs.length - 1];
+      const lastP = lastFourPs[lastFourPs.length - 1];
       const linkInP = lastP.querySelector('a');
       
       if (linkInP) {
@@ -76,7 +95,7 @@ const { lang, slug } = Astro.params;
         linkDiv.appendChild(linkInP);
         lastP.replaceWith(linkDiv);
         // Actualizar la referencia del último elemento
-        allPs[allPs.length - 1] = linkDiv;
+        lastFourPs[lastFourPs.length - 1] = linkDiv;
       }
       
       // Crear div para envolver los 3 p + el div con link
@@ -84,15 +103,15 @@ const { lang, slug } = Astro.params;
       textWrapper.className = 'text-wrapper';
       
       // Insertar antes del primer p
-      allPs[0].parentNode.insertBefore(textWrapper, allPs[0]);
+      lastFourPs[0].parentNode.insertBefore(textWrapper, lastFourPs[0]);
       
       // Mover los 3 p y el div con link dentro del wrapper
-      allPs.forEach((p, index) => {
+      lastFourPs.forEach((p, index) => {
         if (index < 3) {
           textWrapper.appendChild(p);
         } else {
           // El último es el div con link
-          textWrapper.appendChild(allPs[allPs.length - 1]);
+          textWrapper.appendChild(lastFourPs[lastFourPs.length - 1]);
         }
       });
       
@@ -106,6 +125,5 @@ const { lang, slug } = Astro.params;
       generalWrapper2.appendChild(remainingFigure);
       generalWrapper2.appendChild(textWrapper);
     }
-  }
 
 </script>
