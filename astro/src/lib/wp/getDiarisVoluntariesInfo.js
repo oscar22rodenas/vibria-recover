@@ -8,7 +8,9 @@ export const getDiarisVoluntariesInfo = async (lang, slug) => {
 
     // 2. Obtener los Años (Taxonomía 'anys')
     const responseAnys = await fetch(`${apiURL}/anys?_fields=id,name,slug`);
-    const anys = await responseAnys.json();
+    const anysData = await responseAnys.json();
+
+    const anys = Array.isArray(anysData) ? anysData.reverse() : [];
 
     // 3. Obtener todos los Diarios (CPT 'diaris')
     // Usamos _embed para que traiga la imagen destacada

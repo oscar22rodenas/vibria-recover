@@ -1,0 +1,110 @@
+---
+import CategoryNav from "@components/CategoryNav.astro";
+import "@styles/diari-content.css";
+
+const { lang, slug } = Astro.params;
+const { globalData, detailedData } = Astro.props;
+
+const diari = detailedData;
+const { categories } = globalData;
+---
+
+<CategoryNav lang={lang} slug={slug} categories={categories} />
+
+<article class="mx-auto bg-white p-4 space-y-4 md:px-12 lg:px-16 xl:px-20 md:mx-[15%]">
+    <header class="mb-8 text-center">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-red uppercase tracking-tighter">
+            {diari.title}
+        </h1>
+        <div class="h-1 w-24 bg-red mx-auto mt-4"></div>
+    </header>
+
+    <div class="diari-content" set:html={diari.content}></div>
+
+<div class="mt-12 flex justify-center">
+    <button 
+        onclick="history.back()"
+        class="bg-red text-white font-700 pb-1 px-4 text-center rounded-3xl shadow-[0_2px_4px_0_rgba(0,0,0,0.25)] transition-colors hover:bg-black cursor-pointer"
+    >
+        Volver a Diarios
+    </button>
+</div>
+</article>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const content = document.querySelector('.diari-content');
+  if (!content) return;
+
+  const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+  if (!isDesktop) return;
+
+  const children = Array.from(content.children);
+  const headers = [];
+  const contentPairs = [];
+  
+  let i = 0;
+  while (i < children.length) {
+    const current = children[i];
+    
+    if (current.tagName === 'H2' || current.tagName === 'H1') {
+      headers.push({ type: 'header', element: current, index: i });
+      i++;
+      continue;
+    }
+    
+    if (current.tagName === 'DIV') {
+      const innerP = current.querySelector('p');
+      const innerFigure = current.querySelector('figure');
+      if (innerP && innerFigure) {
+        contentPairs.push({ type: 'pair', text: innerP, image: innerFigure, index: i });
+        i++;
+        continue;
+      }
+    }
+    
+    if (current.tagName === 'P' && children[i + 1]?.tagName === 'FIGURE') {
+      contentPairs.push({ type: 'pair', text: current, image: children[i + 1], index: i });
+      i += 2;
+      continue;
+    }
+    
+    if (current.tagName === 'FIGURE' && children[i + 1]?.tagName === 'P') {
+      contentPairs.push({ type: 'pair', text: children[i + 1], image: current, index: i });
+      i += 2;
+      continue;
+    }
+    
+    contentPairs.push({ type: 'single', element: current, index: i });
+    i++;
+  }
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'diari-wrapper';
+
+  let pairIndex = 0;
+  contentPairs.forEach(item => {
+    if (item.type === 'pair') {
+      const row = document.createElement('div');
+      row.className = 'fila';
+      
+      if (pairIndex % 2 === 0) {
+        row.appendChild(item.text.cloneNode(true));
+        row.appendChild(item.image.cloneNode(true));
+      } else {
+        row.className = 'fila reverse';
+        row.appendChild(item.image.cloneNode(true));
+        row.appendChild(item.text.cloneNode(true));
+      }
+      wrapper.appendChild(row);
+      pairIndex++;
+    } else if (item.type === 'single') {
+      wrapper.appendChild(item.element.cloneNode(true));
+    }
+  });
+
+  content.innerHTML = '';
+  headers.forEach(h => content.appendChild(h.element.cloneNode(true)));
+  content.appendChild(wrapper);
+});
+</script>
