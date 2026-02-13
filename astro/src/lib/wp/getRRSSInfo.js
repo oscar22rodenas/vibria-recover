@@ -5,7 +5,7 @@ export async function getRRSSInfo() {
     try {
         // Fetchear custom post type de RRSS
         const res = await fetch(
-            `${apiURL}/redes_sociales?order=asc&per_page=100&_fields=acf`
+            `${apiURL}/redes_sociales?order=asc&per_page=500&_fields=acf`
         );
         
         if (!res.ok) {

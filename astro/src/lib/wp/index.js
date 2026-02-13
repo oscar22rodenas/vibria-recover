@@ -1,4 +1,4 @@
-export { getImageInfo } from "./getImageInfo.js";
+export { getImageInfo, getImagesByIds } from "./getImageInfo.js";
 export { getSlidesInfo } from "./getSlidesInfo.js";
 export { getRRSSInfo } from "./getRRSSInfo.js";
 export { getCategoriesInfo } from "./getCategoriesInfo.js";
@@ -29,3 +29,9 @@ export { getReforeInfo } from "./getReforeInfo.js";
 export { getSendingInfo } from "./getSendingInfo.js";
 export { getVolunteerInfo } from "./getVolunteerInfo.js";
 export { getVolunteerDetalladaInfo } from "./getVolunteerDetalladaInfo.js";
+export { getAllSlidesInfo, resetSlidesCache } from "./getSlidesInfo.js";
+export { getAllOfertesInfo, resetOfertesCache } from "./getOfertesInfo.js";
+export { getAllExperienciesInfo, resetExperienciesCache } from "./getExperienciesInfo.js";
+export { getAllExperienciesErasmusInfo, resetExperienciesErasmusCache } from "./getExperienciesErasmusInfo.js";
+export { getAllQuiSomInfo, resetQuiSomCache } from "./getQuiSomInfo.js";
+export { getAllDiarisInfo, resetDiarisCache } from "./getDiarisVoluntariesInfo.js";

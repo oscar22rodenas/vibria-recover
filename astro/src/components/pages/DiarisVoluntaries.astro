@@ -5,92 +5,113 @@ import "@styles/experiencies-content.css";
 const { pageData, typeSpecificData, globalData } = Astro.props;
 const { diaris = [], anys = [] } = typeSpecificData;
 const { categories } = globalData;
-const { lang, slug } = Astro.params;
+const { lang } = Astro.params;
+
+// Extract base title from pageData.content (e.g., "Diaris voluntàries")
+const basePageContent = pageData.content || "";
+const baseTitleMatch = basePageContent.match(/<h2[^>]*>(.*?)<\/h2>/i);
+const baseTitle = baseTitleMatch ? baseTitleMatch[1] : "Diaris Voluntaries"; // Fallback title
 ---
 
-<CategoryNav lang={lang} slug={slug} categories={categories} />
+<div class="md:sticky md:float-left w-full md:top-[160px] md:w-[15%]">
+  <CategoryNav class="md:w-full" lang={lang} slug={pageData.slug} categories={categories} />
 
-<article class="mx-auto bg-white p-4 space-y-4 md:mx-[15%] flex flex-col md:flex-row gap-8">
-  <aside class="w-full md:w-48 shrink-0">
-    <h3 class="font-bold mb-4 uppercase text-sm tracking-widest text-red">Anys</h3>
-    <ul class="space-y-2 border-l-2 border-gray-100 pl-4">
-      {anys.map((any) => (
-        <li>
-          <a 
-            href={`/${lang}/${slug}?any=${any.slug}`}
-            class="any-link text-sm block hover:text-red transition-colors text-gray-500"
-            data-slug={any.slug}
-          >
-            {any.name}
-          </a>
-        </li>
-      ))}
+  <aside
+    class={`md:h-full md:float-left sticky top-[120px] z-20 md:top-[160px] md:mx-5`}
+  >
+    <ul
+      class={`flex gap-6 px-4 my-3 overflow-x-auto whitespace-nowrap md:flex-col md:bg-transparent md:text-wrap md:border-b-transparent md:gap-2 md:border-l border-red md:overflow-x-hidden`}
+    >
+      {
+        anys.map((any) => (
+          <li>
+            <a
+              href={`/${lang}/${pageData.slug}?any=${any.slug}`}
+              class="any-link text-sm block text-[#DB8898] hover:text-red"
+              data-slug={any.slug}
+            >
+              {any.name}
+            </a>
+          </li>
+        ))
+      }
     </ul>
   </aside>
+</div>
 
-  <div class="flex-1">
-    <div class="mb-6">
-      <h2 id="year-title" class="text-2xl font-bold text-gray-800 uppercase">
-        Diaris de Voluntàries
-      </h2>
-    </div>
+<article class="mx-auto bg-white p-4 space-y-4 md:mx-[15%]">
+  <h2 id="main-title" class="text-3xl font-bold text-center text-red mt-8 mb-2 hidden md:block"></h2>
+  <p id="year-description" class="text-justify mb-6"></p>
 
-    <div class="experiencies-content mb-8" set:html={pageData.content} />
-
-    <div id="diaris-grid" class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {diaris.map((diari) => {
-        const imageUrl = diari._embedded?.['wp:featuredmedia']?.[0]?.source_url;
-        const imageAlt = diari._embedded?.['wp:featuredmedia']?.[0]?.alt_text || diari.title.rendered;
-
+  <div
+    id="diaris-grid"
+    class="grid grid-cols-2 gap-6 md:grid-cols-2 lg:grid-cols-3"
+  >
+    {
+      diaris.map((diari) => {
         return (
-          <div 
-            class="diari-card flex flex-col bg-white shadow-[0_4px_4px_rgba(0,0,0,0.25)]"
-            data-years={JSON.stringify(diari.anys)}
+          <div
+            class="diari-card flex flex-col"
+            data-years={JSON.stringify(diari.anyIds)}
           >
-            <a href={`/${lang}/diari/${diari.slug}`} class="block">
-              {imageUrl ? (
-                <img src={imageUrl} alt={imageAlt} class="w-full h-64 object-cover border-b-4" />
-              ) : (
-                <div class="w-full h-64 bg-gray-200 flex items-center justify-center text-gray-400">Sense portada</div>
-              )}
+            <a href={diari.link} class="block">
+                <img
+                  src={diari.imageUrl}
+                  alt={diari.imageAlt}
+                  class="w-full h-full"
+                />
             </a>
           </div>
         );
-      })}
-    </div>
+      })
+    }
   </div>
 </article>
 
-<script is:inline define:vars={{ anys }}>
+<script is:inline define:vars={{ anys, baseTitle, pageSlug: pageData.slug }}>
   function filterByYear() {
     const url = new URL(window.location);
     let selectedSlug = url.searchParams.get("any");
+    const mainTitleEl = document.getElementById("main-title");
+    const yearDescriptionEl = document.getElementById("year-description");
 
     if (!selectedSlug && anys.length > 0) {
       selectedSlug = anys[0].slug;
       url.searchParams.set("any", selectedSlug);
-      window.history.replaceState({}, '', url);
+      window.history.replaceState({}, "", url);
     }
 
+    // Update main title and year description
     if (selectedSlug) {
-      const selectedAnyObj = anys.find(a => a.slug === selectedSlug);
+      const selectedAnyObj = anys.find((a) => a.slug === selectedSlug);
+      if (mainTitleEl && selectedAnyObj) {
+        mainTitleEl.innerText = `${baseTitle} ${selectedAnyObj.name}`;
+      }
+      if (yearDescriptionEl && selectedAnyObj) {
+        yearDescriptionEl.innerText = selectedAnyObj.description || "";
+      }
+    } else {
+      if (mainTitleEl) mainTitleEl.innerText = baseTitle;
+      if (yearDescriptionEl) yearDescriptionEl.innerText = "";
+    }
+
+    // Filter cards
+    if (selectedSlug) {
+      const selectedAnyObj = anys.find((a) => a.slug === selectedSlug);
       const selectedId = selectedAnyObj?.id;
 
-      const titleEl = document.getElementById("year-title");
-      if (titleEl && selectedAnyObj) titleEl.innerText = `Diaris del curs ${selectedAnyObj.name}`;
-
-      document.querySelectorAll(".any-link").forEach(link => {
+      document.querySelectorAll(".any-link").forEach((link) => {
         if (link.dataset.slug === selectedSlug) {
-          link.classList.add("text-red", "font-bold", "underline");
-          link.classList.remove("text-gray-500");
+          link.classList.add("text-red", "font-bold", "border-b-2", "border-red");
+          link.classList.remove("text-[#DB8898]");
         } else {
-          link.classList.remove("text-red", "font-bold", "underline");
-          link.classList.add("text-gray-500");
+          link.classList.remove("text-red", "font-bold", "border-b-2", "border-red");
+          link.classList.add("text-[#DB8898]");
         }
       });
 
       const cards = document.querySelectorAll(".diari-card");
-      cards.forEach(card => {
+      cards.forEach((card) => {
         const cardYears = JSON.parse(card.dataset.years || "[]");
         if (cardYears.includes(selectedId)) {
           card.style.display = "block";
@@ -98,10 +119,15 @@ const { lang, slug } = Astro.params;
           card.style.display = "none";
         }
       });
+    } else {
+      // If no year is selected, show all cards
+      document.querySelectorAll(".diari-card").forEach((card) => {
+        card.style.display = "block";
+      });
     }
   }
 
   filterByYear();
 
-  window.addEventListener('popstate', filterByYear);
+  window.addEventListener("popstate", filterByYear);
 </script>

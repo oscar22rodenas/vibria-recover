@@ -1,8 +1,8 @@
 ---
 // astro/src/components/CategoryNav.astro
 
-// ✅ Recibe categorías por props
-const { categories } = Astro.props;
+// ✅ Recibe categorías y clase personalizada por props
+const { categories, class: customClass = '' } = Astro.props;
 const { lang, slug } = Astro.params;
 
 const lastSegment = slug.toLowerCase();
@@ -66,8 +66,8 @@ const currentCategoryColors = categoryColors[currentCategory] ?? {
     </div>
 
     {currentCategoryId && categories.children[currentCategoryId]?.length > 0 && (
-      <div class={`md:h-full md:w-[15%] md:pt-[50px] md:float-left sticky top-[120px] z-20 md:top-[160px] md:mx-5`}>
-        <nav class={`flex gap-6 px-4 py-3 bg-gray-50 border-b border-gray-200 overflow-x-auto whitespace-nowrap md:flex-col md:bg-transparent md:text-wrap md:border-b-transparent md:gap-2 md:border-l ${currentCategoryColors.border} md:overflow-x-hidden`}>
+      <div class={`md:h-full md:w-[15%] ${customClass} md:pt-[50px] md:float-left sticky top-[120px] z-20 md:top-[160px] md:mx-5`}>
+        <nav class={`flex gap-6 px-4 my-3 bg-gray-50 border-b border-gray-200 overflow-x-auto whitespace-nowrap md:flex-col md:bg-transparent md:text-wrap md:border-b-transparent md:gap-2 md:border-l ${currentCategoryColors.border} md:overflow-x-hidden`}>
           {categories.children[currentCategoryId].map((sub) => {
             const isActive = sub.slug.toLowerCase() === lastSegment;
             return (

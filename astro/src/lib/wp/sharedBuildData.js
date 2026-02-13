@@ -1,7 +1,7 @@
 import { apiURL } from "@wp/config.js";
 import { 
     getPostsInfo, 
-    getImageInfo, 
+    getImagesByIds,  // ✅ Usar batch version
     getCategoriesInfo, 
     getRRSSInfo,
     getCategoriesHeaderInfo
@@ -19,15 +19,16 @@ let allPagesCache = null;
  * - Cachea el resultado para no repetir en el segundo archivo
  */
 export async function getGlobalData() {
+    console.log('📡 [getGlobalData] Starting fetch for global data...');
     if (globalDataCache) {
-        console.log("✅ [CACHE HIT] Using cached global data");
+        console.log("✅ [getGlobalData] Cache hit for global data.");
         return globalDataCache;
     }
     
     const languages = ["ca", "es", "en"];
     const startTime = Date.now();
     
-    console.log("📡 [FETCH] Fetching global data...");
+    console.log("📡 [getGlobalData] Fetching basic global data (headers, footers, categories, links, rrss) in parallel...");
     
     // ============================================
     // PASO 1: Fetchear TODO lo básico en paralelo
@@ -46,19 +47,17 @@ export async function getGlobalData() {
         getRRSSInfo()
     ]);
     
-    console.log(`✅ [${Date.now() - startTime}ms] Basic data fetched`);
+    console.log(`✅ [getGlobalData] Basic data fetched in ${Date.now() - startTime}ms.`);
     
     // ============================================
     // PASO 2: Recopilar TODOS los IDs de imágenes
     // ============================================
-    const imagePromises = [];
+    const allImageIds = [];
     
     // Headers (3 imágenes: una por idioma)
     allHeaders.forEach(header => {
         if (header?.header_imagen) {
-            imagePromises.push(getImageInfo(header.header_imagen));
-        } else {
-            imagePromises.push(Promise.resolve(null));
+            allImageIds.push(header.header_imagen);
         }
     });
     
@@ -70,46 +69,64 @@ export async function getGlobalData() {
             footer?.correo_imagen
         ].filter(Boolean);
         
-        ids.forEach(id => imagePromises.push(getImageInfo(id)));
+        allImageIds.push(...ids);
     });
     
     // RRSS (N imágenes compartidas)
-    const rrssImagePromises = (rrssRaw || [])
-        .filter(red => red.imageId)
-        .map(red => getImageInfo(red.imageId));
-    
+    (rrssRaw || []).forEach(red => {
+        if (red.imageId) {
+            allImageIds.push(red.imageId);
+        }
+    });
+    console.log(`   [getGlobalData] Collected ${allImageIds.length} image IDs for global data: [${allImageIds.join(', ')}]`);
+
     // ============================================
-    // PASO 3: Fetchear TODAS las imágenes en paralelo
+    // PASO 3: Fetchear TODAS las imágenes en UN SOLO FETCH
     // ============================================
-    const allImages = await Promise.all([...imagePromises, ...rrssImagePromises]);
+    console.log(`📡 [getGlobalData] Fetching ${allImageIds.length} images in ONE batch request...`);
     
-    console.log(`✅ [${Date.now() - startTime}ms] All images resolved`);
+    const allImages = await getImagesByIds(allImageIds);
     
+    console.log(`✅ [getGlobalData] All images resolved in ${Date.now() - startTime}ms.`);
+    console.log(`   [getGlobalData] Received ${allImages.length} images from batch fetch.`);
+
     // ============================================
     // PASO 4: Distribuir imágenes a sus respectivos owners
     // ============================================
     let imageIndex = 0;
     
-    // Headers: primeras 3 imágenes
-    const headerImages = allImages.slice(0, languages.length);
-    imageIndex += languages.length;
+    // Headers: primeras N imágenes
+    const headerImages = [];
+    allHeaders.forEach(header => {
+        if (header?.header_imagen) {
+            headerImages.push(allImages[imageIndex++]);
+        } else {
+            headerImages.push(null);
+        }
+    });
+    console.log(`   [getGlobalData] Distributed ${headerImages.length} header images. Current imageIndex: ${imageIndex}`);
     
     // Footers: siguientes N imágenes
     const footerImagesByLang = {};
     allFooters.forEach((footer, i) => {
         const lang = languages[i];
-        const count = [
-            footer?.ubicacion_imagen,
-            footer?.telefono_imagen,
-            footer?.correo_imagen
-        ].filter(Boolean).length;
+        const footerImgs = [];
         
-        footerImagesByLang[lang] = allImages.slice(imageIndex, imageIndex + count);
-        imageIndex += count;
+        if (footer?.ubicacion_imagen) footerImgs.push(allImages[imageIndex++]);
+        if (footer?.telefono_imagen) footerImgs.push(allImages[imageIndex++]);
+        if (footer?.correo_imagen) footerImgs.push(allImages[imageIndex++]);
+        
+        footerImagesByLang[lang] = footerImgs;
     });
     
     // RRSS: últimas N imágenes
-    const rrssImages = allImages.slice(imageIndex);
+    const rrssImages = [];
+    (rrssRaw || []).forEach(red => {
+        if (red.imageId) {
+            rrssImages.push(allImages[imageIndex++]);
+        }
+    });
+    console.log(`   [getGlobalData] Distributed ${rrssImages.length} RRSS images. Current imageIndex: ${imageIndex}`);
     
     // ============================================
     // PASO 5: Construir RRSS con imágenes (compartidas)
@@ -168,7 +185,7 @@ export async function getGlobalData() {
         };
     });
     
-    console.log(`✅ [${Date.now() - startTime}ms] Global data ready`);
+    console.log(`✅ [getGlobalData] Global data ready in ${Date.now() - startTime}ms`);
     
     // ============================================
     // GUARDAR EN CACHE
@@ -182,19 +199,20 @@ export async function getGlobalData() {
  * - Cachea el fetch de páginas para no repetir
  */
 export async function getAllPages() {
+    console.log('📡 [getAllPages] Starting fetch for all pages...');
     if (allPagesCache) {
-        console.log("✅ [CACHE HIT] Using cached pages");
+        console.log("✅ [getAllPages] Cache hit for all pages.");
         return allPagesCache;
     }
     
-    console.log("📡 [FETCH] Fetching all pages...");
+    const startTime = Date.now();
     
     const pagesRes = await fetch(
-        `${apiURL}/pages?per_page=100&_fields=slug,acf,content`
+        `${apiURL}/pages?per_page=500&_fields=slug,acf,content`
     );
     const allPages = await pagesRes.json();
     
-    console.log(`✅ ${allPages.length} pages fetched`);
+    console.log(`✅ [getAllPages] Fetched ${allPages.length} pages in ${Date.now() - startTime}ms`);
     
     // GUARDAR EN CACHE
     allPagesCache = allPages;
