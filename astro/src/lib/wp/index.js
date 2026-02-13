@@ -15,6 +15,7 @@ export { getAssessoriesInfo } from "./getAssessoriesInfo.js";
 export { getAcollidaInfo } from "./getAcollidaInfo.js";
 export { getBaumannInfo } from "./getBaumannInfo.js";
 export { getDiarisVoluntariesInfo } from "./getDiarisVoluntariesInfo.js";
+export {getDiariDetallatInfo} from "./getDiariDetallatInfo.js";
 export { getQuiSomInfo } from "./getQuiSomInfo.js";
 export { getFormacionsInfo } from "./getFormacionsInfo.js";
 export { getGreenfluencersInfo } from "./getGreenfluencersInfo.js";

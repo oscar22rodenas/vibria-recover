@@ -3,104 +3,96 @@
 import { extractLang } from "@wp/extractLang.js";
 import { 
     getOfertaDetalladaInfo,
-    getExperienciaDetalladaInfo
+    getExperienciaDetalladaInfo,
+    getDiariDetallatInfo
 } from "@wp/index.js";
 import { getGlobalData, getAllPages } from "@wp/sharedBuildData.js";
 import Layout from "@layouts/Layout.astro";
 import OfertaDetallada from "@components/pages/OfertaDetallada.astro";
 import ExperienciaDetallada from "@components/pages/ExperienciaDetallada.astro";
+import DiariDetallat from "@components/pages/DiariDetallat.astro";
 
 export async function getStaticPaths() {
     const languages = ["ca", "es", "en"];
-    
-    console.log("🚀 [SUBSLUG] Building detailed pages...");
-    const startTime = Date.now();
-    
-    // ============================================
-    // ✅ OPTIMIZACIÓN 2: Datos globales cacheados
-    // ============================================
     const globalData = await getGlobalData();
-    console.log(`✅ [${Date.now() - startTime}ms] Global data ready`);
-    
-    // ============================================
-    // ✅ OPTIMIZACIÓN 3: Páginas cacheadas
-    // ============================================
-    const allPages = await getAllPages();
-    
-    // ✅ FILTRAR: Solo páginas CON categoría (van a [subslug])
-    const detailedPages = allPages.filter(page => page.acf?.categoria);
-    console.log(`✅ [${Date.now() - startTime}ms] Found ${detailedPages.length} detailed pages`);
-    
-    // ============================================
-    // PASO 3: Fetchear datos detallados por idioma
-    // ============================================
-    console.log(`⏱️  [${Date.now() - startTime}ms] Processing detailed data for each page...`);
-    
-    const pathsPromises = detailedPages.map(async (page) => {
-        const extracted = extractLang(page.slug);
-        if (!extracted || !languages.includes(extracted.lang)) {
-            return null;
-        }
-        
-        const { lang, baseSlug } = extracted;
-        const categoria = page.acf.categoria;
-        const slugCompleto = page.slug;
-        
-        let detailedData = null;
-        const pageStartTime = Date.now();
-        
-        try {
-            if (categoria === 'ofertes') {
-                console.log(`⏱️  [${Date.now() - startTime}ms] Fetching oferta [${lang}]: ${baseSlug}`);
-                detailedData = await getOfertaDetalladaInfo(slugCompleto);
-                console.log(`✅ [${Date.now() - startTime}ms] Oferta ${baseSlug} [${lang}] done (${Date.now() - pageStartTime}ms)`);
-            } else if (categoria === 'experiencies') {
-                console.log(`⏱️  [${Date.now() - startTime}ms] Fetching experiencia [${lang}]: ${baseSlug}`);
-                detailedData = await getExperienciaDetalladaInfo(slugCompleto);
-                console.log(`✅ [${Date.now() - startTime}ms] Experiencia ${baseSlug} [${lang}] done (${Date.now() - pageStartTime}ms)`);
-            }
-        } catch (error) {
-            console.error(`❌ [${Date.now() - startTime}ms] Error fetching ${categoria}/${baseSlug} [${lang}]:`, error.message);
-        }
-        
-        return {
-            params: { 
-                lang, 
-                slug: categoria, 
-                subslug: baseSlug 
-            },
+    const allPages = await getAllPages(); 
+
+    // 1. Obtener diarios con _embed para traer imágenes y evitar fetch individuales después
+    const responseDiaris = await fetch(`http://localhost:8000/wp-json/wp/v2/diaris?_embed&_fields=slug,title,content,_embedded`);
+    const allDiaris = await responseDiaris.json();
+
+    // 2. Procesar páginas normales (Ofertas y Experiencias)
+    const pagePathsPromises = allPages
+        .filter(page => page.acf?.categoria)
+        .map(async (page) => {
+            const extracted = extractLang(page.slug);
+            if (!extracted || !languages.includes(extracted.lang)) return null;
+            
+            const { lang, baseSlug } = extracted;
+            const categoria = page.acf.categoria;
+            
+            let detailedData = null;
+            if (categoria === 'ofertes') detailedData = await getOfertaDetalladaInfo(page.slug);
+            else if (categoria === 'experiencies') detailedData = await getExperienciaDetalladaInfo(page.slug);
+
+            return {
+                params: { lang, slug: categoria, subslug: baseSlug },
+                props: {
+                    globalData: globalData[lang],
+                    pageData: { acf: page.acf, content: page.content?.rendered || "" },
+                    detailedData
+                }
+            };
+        });
+
+    // 3. Generar rutas para Diarios INYECTANDO los datos (Optimizado para Build rápido)
+    const diariPaths = allDiaris.flatMap((diari) => {
+        // Pre-procesamos el objeto de datos del diario aquí
+        const diariData = {
+            title: diari.title.rendered,
+            content: diari.content.rendered,
+            imageUrl: diari._embedded?.['wp:featuredmedia']?.[0]?.source_url || null,
+            imageAlt: diari._embedded?.['wp:featuredmedia']?.[0]?.alt_text || diari.title.rendered
+        };
+
+        return languages.map(lang => ({
+            params: { lang, slug: 'diari', subslug: diari.slug },
             props: {
                 globalData: globalData[lang],
-                pageData: {
-                    acf: page.acf,
-                    content: page.content?.rendered || ""
+                pageData: { 
+                    acf: { categoria: 'diari' }, 
+                    content: diari.content.rendered 
                 },
-                detailedData
+                detailedData: diariData // Pasamos los datos ya listos
             }
-        };
+        }));
     });
-    
-    const paths = (await Promise.all(pathsPromises)).filter(Boolean);
-    
-    const endTime = Date.now();
-    const duration = ((endTime - startTime) / 1000).toFixed(2);
-    
-    console.log(`⏱️  [${Date.now() - startTime}ms] Building completed`);
-    console.log(`✅ Detailed pages built: ${paths.length} in ${duration}s (${endTime - startTime}ms total)`);
-    
-    return paths;
+
+    const pagesResults = await Promise.all(pagePathsPromises);
+    return [...pagesResults.filter(Boolean), ...diariPaths];
 }
 
-const { globalData, pageData, detailedData } = Astro.props;
+const { globalData, pageData, detailedData: initialData } = Astro.props;
+const { subslug, slug } = Astro.params;
+
+// detailedData ya vendrá de las props gracias al cambio anterior
+let detailedData = initialData;
+
+// Fallback de seguridad (solo se ejecutará en modo dev si algo falta)
+if (!detailedData && slug === 'diari') {
+    detailedData = await getDiariDetallatInfo(subslug);
+}
 
 let PageComponent;
-
-switch (Astro.params.slug) {
+switch (slug) {
     case "ofertes":
         PageComponent = OfertaDetallada;
         break;
     case "experiencies":
         PageComponent = ExperienciaDetallada;
+        break;
+    case "diari":
+        PageComponent = DiariDetallat;
         break;
     default:
         break;
