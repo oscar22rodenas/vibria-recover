@@ -129,7 +129,6 @@ export const getAllDiarisInfo = async () => {
   
   diarisProcessedCache = result;
   const duration = Date.now() - startTime;
-  console.log(`✅ [DIARIS] All diaris processed in ${duration}ms. Final structure:`, Object.keys(result).map(key => `${key}: anys(${result[key].anys.length}), diaris(${result[key].diaris.length})`).join(', '));
   
   return result;
 };
@@ -157,9 +156,7 @@ export const getDiarisVoluntariesInfo = async (lang, slug) => {
     pageContent: pageDataInfo?.content?.rendered || '',
     anys: langData.anys,
     diaris: langData.diaris
-  }];
-  console.log(`✅ [DIARIS] Processed for ${lang} in ${duration}ms. Returning:`, JSON.stringify(result));
-  
+  }];  
   return result;
 };
 

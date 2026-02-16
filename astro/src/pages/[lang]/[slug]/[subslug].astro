@@ -3,12 +3,14 @@
 import { extractLang } from "@wp/extractLang.js";
 import { 
     getOfertaDetalladaInfo,
-    getExperienciaDetalladaInfo
+    getExperienciaDetalladaInfo,
+    getDiariDetalladaInfo
 } from "@wp/index.js";
 import { getGlobalData, getAllPages } from "@wp/sharedBuildData.js";
 import Layout from "@layouts/Layout.astro";
 import OfertaDetallada from "@components/pages/OfertaDetallada.astro";
 import ExperienciaDetallada from "@components/pages/ExperienciaDetallada.astro";
+import DiariDetallada from "@components/pages/DiariDetallada.astro";
 
 export async function getStaticPaths() {
     const languages = ["ca", "es", "en"];
@@ -58,6 +60,12 @@ export async function getStaticPaths() {
                 console.log(`⏱️  [${Date.now() - startTime}ms] Fetching experiencia [${lang}]: ${baseSlug}`);
                 detailedData = await getExperienciaDetalladaInfo(slugCompleto);
                 console.log(`✅ [${Date.now() - startTime}ms] Experiencia ${baseSlug} [${lang}] done (${Date.now() - pageStartTime}ms)`);
+            } else if (categoria === 'diaris-voluntaries') {
+                console.log(`⏱️  [${Date.now() - startTime}ms] Fetching diari [${lang}]: ${baseSlug}`);
+                detailedData = await getDiariDetalladaInfo(slugCompleto);
+                console.log(`✅ [${Date.now() - startTime}ms] Diari ${baseSlug} [${lang}] done (${Date.now() - pageStartTime}ms)`);
+            } else {
+                console.warn(`⚠️  [${Date.now() - startTime}ms] Unknown category '${categoria}' for page ${slugCompleto} [${lang}]`);
             }
         } catch (error) {
             console.error(`❌ [${Date.now() - startTime}ms] Error fetching ${categoria}/${baseSlug} [${lang}]:`, error.message);
@@ -101,6 +109,9 @@ switch (Astro.params.slug) {
         break;
     case "experiencies":
         PageComponent = ExperienciaDetallada;
+        break;
+    case "diaris-voluntaries":
+        PageComponent = DiariDetallada;
         break;
     default:
         break;
