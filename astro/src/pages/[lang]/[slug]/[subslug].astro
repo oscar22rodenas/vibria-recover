@@ -14,13 +14,6 @@ import DiariDetallada from "@components/pages/DiariDetallada.astro";
 
 export async function getStaticPaths() {
     const languages = ["ca", "es", "en"];
-    
-    console.log("🚀 [SUBSLUG] Building detailed pages...");
-    const startTime = Date.now();
-    
-    // ============================================
-    // ✅ OPTIMIZACIÓN 2: Datos globales cacheados
-    // ============================================
     const globalData = await getGlobalData();
     console.log(`✅ [${Date.now() - startTime}ms] Global data ready`);
     
@@ -79,31 +72,32 @@ export async function getStaticPaths() {
             },
             props: {
                 globalData: globalData[lang],
-                pageData: {
-                    acf: page.acf,
-                    content: page.content?.rendered || ""
+                pageData: { 
+                    acf: { categoria: 'diari' }, 
+                    content: diari.content.rendered 
                 },
-                detailedData
+                detailedData: diariData // Pasamos los datos ya listos
             }
-        };
+        }));
     });
-    
-    const paths = (await Promise.all(pathsPromises)).filter(Boolean);
-    
-    const endTime = Date.now();
-    const duration = ((endTime - startTime) / 1000).toFixed(2);
-    
-    console.log(`⏱️  [${Date.now() - startTime}ms] Building completed`);
-    console.log(`✅ Detailed pages built: ${paths.length} in ${duration}s (${endTime - startTime}ms total)`);
-    
-    return paths;
+
+    const pagesResults = await Promise.all(pagePathsPromises);
+    return [...pagesResults.filter(Boolean), ...diariPaths];
 }
 
-const { globalData, pageData, detailedData } = Astro.props;
+const { globalData, pageData, detailedData: initialData } = Astro.props;
+const { subslug, slug } = Astro.params;
+
+// detailedData ya vendrá de las props gracias al cambio anterior
+let detailedData = initialData;
+
+// Fallback de seguridad (solo se ejecutará en modo dev si algo falta)
+if (!detailedData && slug === 'diari') {
+    detailedData = await getDiariDetallatInfo(subslug);
+}
 
 let PageComponent;
-
-switch (Astro.params.slug) {
+switch (slug) {
     case "ofertes":
         PageComponent = OfertaDetallada;
         break;

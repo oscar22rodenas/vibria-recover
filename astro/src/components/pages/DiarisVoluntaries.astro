@@ -1,6 +1,6 @@
 ---
 import CategoryNav from "@components/CategoryNav.astro";
-import "@styles/experiencies-content.css";
+import "@styles/diaris-voluntaris-content.css";
 
 const { pageData, typeSpecificData, globalData } = Astro.props;
 const { diaris = [], anys = [] } = typeSpecificData;
@@ -113,11 +113,7 @@ const baseTitle = baseTitleMatch ? baseTitleMatch[1] : "Diaris Voluntaries"; // 
       const cards = document.querySelectorAll(".diari-card");
       cards.forEach((card) => {
         const cardYears = JSON.parse(card.dataset.years || "[]");
-        if (cardYears.includes(selectedId)) {
-          card.style.display = "block";
-        } else {
-          card.style.display = "none";
-        }
+        card.style.display = cardYears.includes(selectedAnyObj?.id) ? "flex" : "none";
       });
     } else {
       // If no year is selected, show all cards
@@ -126,7 +122,7 @@ const baseTitle = baseTitleMatch ? baseTitleMatch[1] : "Diaris Voluntaries"; // 
       });
     }
   }
-
+  
   filterByYear();
 
   window.addEventListener("popstate", filterByYear);
