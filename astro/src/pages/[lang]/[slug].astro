@@ -34,7 +34,13 @@ import {
     getDiarisVoluntariesInfo,
     getExperienciesErasmusInfo,
     getIntercanvisJuvenilInfo,
-    getQuiSomInfo
+    getQuiSomInfo,
+    getAllSlidesInfo,
+    getAllOfertesInfo,
+    getAllExperienciesInfo,
+    getAllExperienciesErasmusInfo,
+    getAllQuiSomInfo,
+    getAllDiarisInfo
 } from "@wp/index.js";
 import { getGlobalData, getAllPages } from "@wp/sharedBuildData.js";
 
@@ -49,6 +55,20 @@ export async function getStaticPaths() {
     // ============================================
     const globalData = await getGlobalData();
     console.log(`✅ [${Date.now() - startTime}ms] Global data ready`);
+    
+    console.log('📡 [PRE-LOAD] Pre-loading ALL complex page data...');
+    const preLoadStart = Date.now();
+    
+    await Promise.all([
+      getAllSlidesInfo(),
+      getAllOfertesInfo(),
+      getAllExperienciesInfo(),
+      getAllExperienciesErasmusInfo(),
+      getAllQuiSomInfo(),
+      getAllDiarisInfo()
+    ]);
+    
+    console.log(`✅ [${Date.now() - preLoadStart}ms] Complete pre-load finished`);
     
     // ============================================
     // ✅ OPTIMIZACIÓN 3: Páginas cacheadas
@@ -74,6 +94,7 @@ export async function getStaticPaths() {
         const slugCompleto = page.slug;
         
         let typeSpecificData = {};
+        let pageContent = page.content?.rendered || "";
         
         try {
             switch (baseSlug) {
@@ -103,13 +124,19 @@ export async function getStaticPaths() {
                 }
                 case 'diaris-voluntaries': {
                     // Llamamos a la función que creamos en config.js/index.js
-                    const diarisData = await getDiarisVoluntariesInfo(lang, slugCompleto);
+                    const diarisDataArray = await getDiarisVoluntariesInfo(lang, slugCompleto);
+                    // ✅ CORRECCIÓN: La función retorna un array con 1 elemento, lo desestructuramos
+                    const diarisData = diarisDataArray[0] || {};
                     // Guardamos los años y los diarios en typeSpecificData
                     // para que lleguen como props al componente final
                     typeSpecificData = { 
                         anys: diarisData.anys || [], 
                         diaris: diarisData.diaris || [] 
-                        };
+                    };
+                    // También guardamos el pageContent si existe
+                    if (diarisData.pageContent) {
+                        pageContent = diarisData.pageContent;
+                    }
                     break;
                 }
                 
@@ -121,9 +148,15 @@ export async function getStaticPaths() {
                 }
                 
                 case 'intercanvis-juvenil': {
-                    const experiencias = await getIntercanvisJuvenilInfo(lang);
+                    const intercanvisData = await getIntercanvisJuvenilInfo(lang, slugCompleto);
+                    const data = intercanvisData[0] || {};
                     console.log(`⏱️ intercanvis-juvenil [${lang}] done in ${Date.now() - startTime}ms`);
-                    typeSpecificData = { experiencias: experiencias || [] };
+                    typeSpecificData = { 
+                        experiencias: data.experiencesErasmus || [] 
+                    };
+                    if (data.pageContent) {
+                        pageContent = data.pageContent;
+                    }
                     break;
                 }
                 
@@ -159,7 +192,7 @@ export async function getStaticPaths() {
                 globalData: globalData[lang],
                 pageData: {
                     acf: page.acf,
-                    content: page.content?.rendered || "",
+                    content: pageContent,
                     slug: baseSlug
                 },
                 typeSpecificData

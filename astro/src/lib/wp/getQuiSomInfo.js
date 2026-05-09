@@ -1,69 +1,120 @@
 import { apiURL } from "./config.js";
-import { getPageById } from "./getPageById.js";
+import { getPagesByIds } from "./getPageById.js";
+
+let quiSomRawCache = null;
+let quiSomProcessedCache = null;
+
+export const getAllQuiSomInfo = async () => {
+  console.log('📡 [QUI-SOM] Starting processing for all qui-som data...');
+  if (quiSomProcessedCache) {
+    console.log('✅ [QUI-SOM] Cache hit for processed qui-som data.');
+    return quiSomProcessedCache;
+  }
+  
+  console.log('📡 [QUI-SOM] Processing all qui-som for all languages...');
+  const startTime = Date.now();
+  
+  if (!quiSomRawCache) {
+    console.log('📡 [QUI-SOM] Fetching raw team and voluntaries data from API.');
+    const [teamRes, volRes] = await Promise.all([
+      fetch(`${apiURL}/qui-som?order=asc&per_page=500&_fields=content,slug`),
+      fetch(`${apiURL}/qui-som-voluntaries?order=asc&per_page=500&_fields=content,slug`)
+    ]);
+
+    let fetchedTeam = [];
+    if (teamRes.ok) {
+      fetchedTeam = await teamRes.json();
+      if (!Array.isArray(fetchedTeam)) {
+        console.warn(`⚠️ [QUI-SOM] API for team did not return an array. Received:`, fetchedTeam);
+        fetchedTeam = [];
+      }
+    } else {
+      console.error(`❌ [QUI-SOM] Failed to fetch team data (status: ${teamRes.status})`);
+    }
+
+    let fetchedVoluntaries = [];
+    if (volRes.ok) {
+      fetchedVoluntaries = await volRes.json();
+      if (!Array.isArray(fetchedVoluntaries)) {
+        console.warn(`⚠️ [QUI-SOM] API for voluntaries did not return an array. Received:`, fetchedVoluntaries);
+        fetchedVoluntaries = [];
+      }
+    } else {
+      console.error(`❌ [QUI-SOM] Failed to fetch voluntaries data (status: ${volRes.status})`);
+    }
+    
+    quiSomRawCache = {
+      team: fetchedTeam,
+      voluntaries: fetchedVoluntaries
+    };
+    
+    console.log(`✅ [QUI-SOM] Fetched ${quiSomRawCache.team.length} raw team members + ${quiSomRawCache.voluntaries.length} raw voluntaries.`);
+  } else {
+    console.log('✅ [QUI-SOM] Raw qui-som data found in cache.');
+  }
+  
+  const result = {};
+  
+  ['ca', 'es', 'en'].forEach(lang => {
+    const teamFiltrados = quiSomRawCache.team.filter(item => item.slug?.includes(`-${lang}`));
+    const voluntariesFiltrados = quiSomRawCache.voluntaries.filter(item => item.slug?.includes(`-${lang}`));
+    console.log(`   [QUI-SOM] Found ${teamFiltrados.length} team members and ${voluntariesFiltrados.length} voluntaries for language: ${lang}`);
+    
+    result[lang] = {
+      teamMembers: teamFiltrados.map(item => item.content.rendered),
+      voluntaries: voluntariesFiltrados.map(item => item.content.rendered)
+    };
+  });
+  
+  quiSomProcessedCache = result;
+  const duration = Date.now() - startTime;
+  console.log(`✅ [QUI-SOM] All qui-som processed in ${duration}ms. Final structure:`, Object.keys(result).map(key => `${key}: team(${result[key].teamMembers.length}), voluntaries(${result[key].voluntaries.length})`).join(', '));
+  
+  return result;
+};
 
 export const getQuiSomInfo = async (lang, slug) => {
-  try {
-    // Fetch de qui-som (equipo)
-    const responseQuiSom = await fetch(`${apiURL}/qui-som?order=asc&_fields=content,slug&per_page=100`);
-    if (!responseQuiSom.ok) throw new Error("Error al obtener los contenidos de 'qui-som'");
-    const dataQuiSom = await responseQuiSom.json();
+  console.log(`📡 [QUI-SOM] Getting qui-som for language: ${lang}, slug: ${slug}`);
+  const startTime = Date.now();
+  
+  const allData = await getAllQuiSomInfo();
+  console.log(`   [QUI-SOM] Received processed qui-som data for all languages.`);
 
-    // Fetch de la página principal
-    const responsePage = await fetch(`${apiURL}/pages?slug=${slug}&_fields=content,acf`);
-    if (!responsePage.ok) throw new Error("Error al obtener la página");
-    const [pageDataInfo] = await responsePage.json();
-
-    // Resolver el link del botón
-    const pageId = pageDataInfo.acf.qui_som_boton_link 
-      ? await getPageById(pageDataInfo.acf.qui_som_boton_link) 
-      : null;
-
-    // Fetch de qui-som-voluntaries
-    const responseQuiSomVoluntaries = await fetch(`${apiURL}/qui-som-voluntaries?order=asc&_fields=content,slug&per_page=100`);
-    if (!responseQuiSomVoluntaries.ok) throw new Error("Error al obtener los contenidos de 'qui-som-voluntaries'");
-    const dataQuiSomVoluntaries = await responseQuiSomVoluntaries.json();
-
-    // Filtrar qui-som por idioma
-    const quiSomFiltrados = dataQuiSom.filter(item => item.slug?.includes(`-${lang}`));
-
-    // Filtrar qui-som-voluntaries por idioma
-    const quiSomVoluntariesFiltrados = dataQuiSomVoluntaries.filter(item => item.slug?.includes(`-${lang}`));
-
-    // Procesar datos de qui-som (equipo) - solo devuelven su content
-    const quiSomConDatos = quiSomFiltrados.map((item) => {
-      const { content } = item;
-      if (!content?.rendered) {
-        console.warn(`Contenido sin datos en: ${item.slug}`);
-        return null;
-      }
-      return content.rendered;
-    }).filter(Boolean);
-
-    // Procesar datos de qui-som-voluntaries - solo devuelven su content
-    const quiSomVoluntariesConDatos = quiSomVoluntariesFiltrados.map((voluntariesItem) => {
-      const { content } = voluntariesItem;
-      if (!content?.rendered) {
-        console.warn(`Contenido sin datos en: ${voluntariesItem.slug}`);
-        return null;
-      }
-      return content.rendered;
-    }).filter(Boolean);
-
-    // Devolver un único objeto con TODOS los datos
-    // Los datos ACF (titol1, titol2, etc.) son de la PÁGINA, no de cada item individual
-    return [{
-      quisom: quiSomConDatos,              // Array de HTMLs del equipo
-      voluntaries: quiSomVoluntariesConDatos, // Array de HTMLs de voluntarios
-      pageContent: pageDataInfo.content.rendered || "",
-      titol1: pageDataInfo.acf.qui_som_titulo_1 || "",
-      titol2: pageDataInfo.acf.qui_som_titulo_2 || "",
-      text: pageDataInfo.acf.qui_som_texto || "",
-      buttonText: pageDataInfo.acf.qui_som_boton_texto || "Más información",
-      buttonUrl: pageId ? `/${pageId.lang}${pageId.categoriaSlug}/${pageId.baseSlug}` : "#"
-    }];
-  } 
-  catch (error) {
-    console.error("Error en getQuiSomInfo:", error);
-    return [];
+  const responsePage = await fetch(`${apiURL}/pages?slug=${slug}&_fields=content,acf`);
+  let pageDataInfo = null;
+  if (responsePage.ok) {
+    [pageDataInfo] = await responsePage.json();
+    console.log(`   [QUI-SOM] Fetched page content for slug: ${slug}. Content present: ${!!pageDataInfo?.content?.rendered}`);
+  } else {
+    console.error(`❌ [QUI-SOM] Failed to fetch page content for slug: ${slug} (status: ${responsePage.status})`);
   }
+  
+  const buttonPageId = pageDataInfo?.acf?.qui_som_boton_link;
+  let pageData = null;
+  if (buttonPageId) {
+    pageData = (await getPagesByIds([buttonPageId]))[0];
+    console.log(`   [QUI-SOM] Resolved button page data for ID ${buttonPageId}:`, JSON.stringify(pageData));
+  } else {
+    console.log(`   [QUI-SOM] No button page ID found.`);
+  }
+  
+  const duration = Date.now() - startTime;
+  const result = [{
+    quisom: allData[lang].teamMembers,
+    voluntaries: allData[lang].voluntaries,
+    pageContent: pageDataInfo?.content?.rendered || '',
+    titol1: pageDataInfo?.acf?.qui_som_titulo_1 || '',
+    titol2: pageDataInfo?.acf?.qui_som_titulo_2 || '',
+    text: pageDataInfo?.acf?.qui_som_texto || '',
+    buttonText: pageDataInfo?.acf?.qui_som_boton_texto || '',
+    buttonUrl: pageData ? `/${pageData.lang}${pageData.categoriaSlug}/${pageData.baseSlug}` : '#'
+  }];
+  
+  return result;
+};
+
+export const resetQuiSomCache = () => {
+  quiSomRawCache = null;
+  quiSomProcessedCache = null;
+  console.log('🔄 [QUI-SOM] Cache cleared');
 };

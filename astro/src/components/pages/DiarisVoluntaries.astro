@@ -5,95 +5,125 @@ import "@styles/diaris-voluntaris-content.css";
 const { pageData, typeSpecificData, globalData } = Astro.props;
 const { diaris = [], anys = [] } = typeSpecificData;
 const { categories } = globalData;
-const { lang, slug } = Astro.params;
+const { lang } = Astro.params;
+
+// Extract base title from pageData.content (e.g., "Diaris voluntàries")
+const basePageContent = pageData.content || "";
+const baseTitleMatch = basePageContent.match(/<h2[^>]*>(.*?)<\/h2>/i);
+const baseTitle = baseTitleMatch ? baseTitleMatch[1] : "Diaris Voluntaries"; // Fallback title
 ---
 
-<CategoryNav lang={lang} slug={slug} categories={categories} />
+<div class="md:sticky md:float-left w-full md:top-[160px] md:w-[15%]">
+  <CategoryNav class="md:w-full" lang={lang} slug={pageData.slug} categories={categories} />
 
-<main class="md:ml-[20%] md:pr-[10%] pt-0 px-4 pb-4 md:pt-[50px]">
-  <div class="flex flex-col gap-8">
-    <div class="md:fixed md:left-5 md:w-[15%] md:top-[500px] z-10">      
-      <ul id="years-nav" class="custom-scrollbar flex md:flex-col gap-5 md:gap-2 pr-2 md:px-0 py-2 md:py-0 bg-white md:bg-transparent overflow-x-auto md:overflow-y-auto md:max-h-[30vh] whitespace-nowrap md:whitespace-normal border-b md:border-b-0 border-gray-100 md:border-l-2 md:border-[#D3133A] md:pl-4">        {anys.map((any) => (
+  <aside
+    class={`md:h-full md:float-left sticky top-[120px] z-20 md:top-[160px] md:mx-5`}
+  >
+    <ul
+      class={`flex gap-6 px-4 my-3 overflow-x-auto whitespace-nowrap md:flex-col md:bg-transparent md:text-wrap md:border-b-transparent md:gap-2 md:border-l border-red md:overflow-x-hidden`}
+    >
+      {
+        anys.map((any) => (
           <li>
-            <a 
-              href={`/${lang}/${slug}?any=${any.slug}`}
-              class="any-link text-sm relative pb-2 md:pb-0 block transition-colors text-gray-500 hover:text-red font-medium uppercase tracking-tight"
+            <a
+              href={`/${lang}/${pageData.slug}?any=${any.slug}`}
+              class="any-link text-sm block text-[#DB8898] hover:text-red"
               data-slug={any.slug}
             >
               {any.name}
             </a>
           </li>
-        ))}
-      </ul>
-    </div>
+        ))
+      }
+    </ul>
+  </aside>
+</div>
 
-    <div class="voluntaris-content mb-4" set:html={pageData.content} />
+<article class="mx-auto bg-white p-4 space-y-4 md:mx-[15%]">
+  <h2 id="main-title" class="text-3xl font-bold text-center text-red mt-8 mb-2 hidden md:block"></h2>
+  <p id="year-description" class="text-justify mb-6"></p>
 
-    <div id="diaris-grid" class="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
-      {diaris.map((diari) => {
-        const imageUrl = diari._embedded?.['wp:featuredmedia']?.[0]?.source_url;
-        const imageAlt = diari._embedded?.['wp:featuredmedia']?.[0]?.alt_text || diari.title.rendered;
-
+  <div
+    id="diaris-grid"
+    class="grid grid-cols-2 gap-6 md:grid-cols-2 lg:grid-cols-3"
+  >
+    {
+      diaris.map((diari) => {
         return (
-          <div 
-            class="diari-card flex flex-col bg-white shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-100 group"
-            data-years={JSON.stringify(diari.anys)}
+          <div
+            class="diari-card flex flex-col"
+            data-years={JSON.stringify(diari.anyIds)}
           >
-            <a href={`/${lang}/diari/${diari.slug}`} class="block h-full">
-              <div class="aspect-square overflow-hidden bg-white flex items-center justify-center"> 
-                {imageUrl ? (
-                  <img src={imageUrl} alt={imageAlt} class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                ) : (
-                  <div class="text-gray-300 italic">Sense portada</div>
-                )}
-              </div>
+            <a href={diari.link} class="block">
+                <img
+                  src={diari.imageUrl}
+                  alt={diari.imageAlt}
+                  class="w-full h-full"
+                />
             </a>
           </div>
         );
-      })}
-    </div>
+      })
+    }
   </div>
-</main>
-<script is:inline define:vars={{ anys }}>
+</article>
+
+<script is:inline define:vars={{ anys, baseTitle, pageSlug: pageData.slug }}>
   function filterByYear() {
     const url = new URL(window.location);
     let selectedSlug = url.searchParams.get("any");
+    const mainTitleEl = document.getElementById("main-title");
+    const yearDescriptionEl = document.getElementById("year-description");
 
     if (!selectedSlug && anys.length > 0) {
       selectedSlug = anys[0].slug;
       url.searchParams.set("any", selectedSlug);
-      window.history.replaceState({}, '', url);
+      window.history.replaceState({}, "", url);
     }
 
+    // Update main title and year description
     if (selectedSlug) {
-      const selectedAnyObj = anys.find(a => a.slug === selectedSlug);
+      const selectedAnyObj = anys.find((a) => a.slug === selectedSlug);
+      if (mainTitleEl && selectedAnyObj) {
+        mainTitleEl.innerText = `${baseTitle} ${selectedAnyObj.name}`;
+      }
+      if (yearDescriptionEl && selectedAnyObj) {
+        yearDescriptionEl.innerText = selectedAnyObj.description || "";
+      }
+    } else {
+      if (mainTitleEl) mainTitleEl.innerText = baseTitle;
+      if (yearDescriptionEl) yearDescriptionEl.innerText = "";
+    }
 
-      document.querySelectorAll(".any-link").forEach(link => {
-        const isDesktop = window.innerWidth >= 768;
-        link.classList.remove("font-bold", "text-black", "text-red", "border-l-4", "border-b-4", "border-red", "pl-2", "-ml-[18px]", "pb-1");
-        link.classList.add("text-gray-500");
+    // Filter cards
+    if (selectedSlug) {
+      const selectedAnyObj = anys.find((a) => a.slug === selectedSlug);
+      const selectedId = selectedAnyObj?.id;
 
+      document.querySelectorAll(".any-link").forEach((link) => {
         if (link.dataset.slug === selectedSlug) {
-          link.classList.add("font-bold", "text-black");
-          link.classList.remove("text-gray-500");
-          if (isDesktop) {
-            link.classList.add("border-l-4", "border-red", "pl-2", "-ml-[18px]");
-          } else {
-            link.classList.add("border-b-4", "border-red", "pb-1", "text-red");
-            link.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-          }
+          link.classList.add("text-red", "font-bold", "border-b-2", "border-red");
+          link.classList.remove("text-[#DB8898]");
+        } else {
+          link.classList.remove("text-red", "font-bold", "border-b-2", "border-red");
+          link.classList.add("text-[#DB8898]");
         }
       });
 
       const cards = document.querySelectorAll(".diari-card");
-      cards.forEach(card => {
+      cards.forEach((card) => {
         const cardYears = JSON.parse(card.dataset.years || "[]");
         card.style.display = cardYears.includes(selectedAnyObj?.id) ? "flex" : "none";
+      });
+    } else {
+      // If no year is selected, show all cards
+      document.querySelectorAll(".diari-card").forEach((card) => {
+        card.style.display = "block";
       });
     }
   }
   
   filterByYear();
-  window.addEventListener('popstate', filterByYear);
-  window.addEventListener('resize', filterByYear);
+
+  window.addEventListener("popstate", filterByYear);
 </script>

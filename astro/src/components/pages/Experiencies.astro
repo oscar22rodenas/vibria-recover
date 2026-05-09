@@ -40,13 +40,15 @@ const filteredExperiencies = pin
             <h4 class="text-h4 font-700 text-red text-center px-2">
               {experiencia.title}
             </h4>
-            <Picture
-              formats={["webp", "avif", "jpeg"]}
-              src={experiencia.imageUrl}
-              alt={experiencia.imageAlt}
-              width="326"
-              height="126"
-            />
+            {experiencia.imageUrl && (
+              <Picture
+                formats={["webp", "avif", "jpeg"]}
+                src={experiencia.imageUrl}
+                alt={experiencia.imageAlt}
+                width="326"
+                height="126"
+              />
+            )}
 
             <p class="text-sm text-black font-normal text-center lg:text-[15px] lg:px-4 lg:py-0">
               {experiencia.text}

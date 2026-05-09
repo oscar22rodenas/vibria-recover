@@ -1,107 +1,98 @@
 import { apiURL } from "./config.js";
-import { getImageInfo } from "./getImageInfo.js";
-import { extractLang } from "./extractLang.js";
+import { getImagesByIds } from "./getImageInfo.js";
 import { getPagesByIds } from "./getPageById.js";
+import { extractLang } from "./extractLang.js";
 
-export async function getExperienciesErasmusInfo(lang) {
-  try {
-    // ============================================
-    // PASO 1: Fetchear TODO en paralelo
-    // ============================================
-    const [experienciesResponse, pageResponse] = await Promise.all([
-      fetch(`${apiURL}/experiencies_erasmus?order=asc&_fields=acf,slug`),
-      fetch(`${apiURL}/pages?slug=erasmus-experiencies-${lang}&_fields=content`)
-    ]);
-    
-    if (!experienciesResponse.ok) {
-      console.error(`❌ Error fetching experiencies_erasmus: ${experienciesResponse.status}`);
-      return [];
-    }
-    
-    if (!pageResponse.ok) {
-      console.error(`❌ Error fetching erasmus-experiencies page: ${pageResponse.status}`);
-      return [];
-    }
-    
-    const [data, pageDataArray] = await Promise.all([
-      experienciesResponse.json(),
-      pageResponse.json()
-    ]);
+let experienciesErasmusRawCache = null;
+let experienciesErasmusProcessedCache = null;
 
-    if (!Array.isArray(data)) {
-      console.warn(`⚠️ getExperienciesErasmusInfo: Expected array, got:`, data);
-      return [];
-    }
-
-    const [pageDataInfo] = pageDataArray;
-
-    // ============================================
-    // PASO 2: Filtrar por idioma
-    // ============================================
-    const experienciaFiltrados = data.filter(experiencia => {
-      const extracted = extractLang(experiencia.slug);
+export const getAllExperienciesErasmusInfo = async () => {
+  if (experienciesErasmusProcessedCache) {
+    console.log('✅ [ERASMUS] Cache hit for processed experiencies Erasmus.');
+    return experienciesErasmusProcessedCache;
+  }
+  
+  console.log('📡 [ERASMUS] Processing all experiencies erasmus for all languages...');
+  const startTime = Date.now();
+  
+  if (!experienciesErasmusRawCache) {
+    console.log('📡 [ERASMUS] Fetching raw experiencies erasmus from API.');
+    const response = await fetch(`${apiURL}/experiencies_erasmus?order=asc&_fields=acf,slug&per_page=500`);
+    experienciesErasmusRawCache = await response.json();
+    console.log(`✅ [ERASMUS] Fetched ${experienciesErasmusRawCache.length} raw experiencies erasmus.`);
+  } else {
+    console.log('✅ [ERASMUS] Raw experiencies erasmus found in cache.');
+  }
+  
+  const allImageIds = [];
+  const allPageIds = [];
+  
+  experienciesErasmusRawCache.forEach(exp => {
+    if (exp.acf?.experiencia_imagen) allImageIds.push(exp.acf.experiencia_imagen);
+    if (exp.acf?.experiencia_link) allPageIds.push(exp.acf.experiencia_link);
+  });
+  console.log(`   [ERASMUS] Collected ${allImageIds.length} image IDs and ${allPageIds.length} page IDs.`);
+  
+  console.log(`📡 [ERASMUS] Fetching ${allImageIds.length} images and ${allPageIds.length} pages in 2 batch requests...`);
+  
+  const [allImages, allPages] = await Promise.all([
+    getImagesByIds(allImageIds),
+    getPagesByIds(allPageIds)
+  ]);
+  console.log(`✅ [ERASMUS] Received ${allImages.length} images and ${allPages.length} pages from batch fetches.`);
+  
+  const imageMap = new Map();
+  allImageIds.forEach((id, index) => imageMap.set(id, allImages[index]));
+  console.log(`   [ERASMUS] Constructed imageMap with ${imageMap.size} entries.`);
+  
+  const pageMap = new Map();
+  allPageIds.forEach((id, index) => pageMap.set(id, allPages[index]));
+  console.log(`   [ERASMUS] Constructed pageMap with ${pageMap.size} entries.`);
+  
+  const result = {};
+  
+  ['ca', 'es', 'en'].forEach(lang => {
+    const experienciesFiltrados = experienciesErasmusRawCache.filter(exp => {
+      const extracted = extractLang(exp.slug);
       return extracted && extracted.lang === lang;
     });
-
-    // ============================================
-    // PASO 3: Recopilar TODOS los IDs
-    // ============================================
-    const imageIds = [];
-    const pageIds = [];
-
-    experienciaFiltrados.forEach((experiencia) => {
-      const { acf } = experiencia;
-      
-      imageIds.push(acf?.experiencia_imagen || null);
-      pageIds.push(acf?.experiencia_link || null);
-    });
-
-    // ============================================
-    // PASO 4: Fetchear TODO en paralelo
-    // ============================================
-    const [images, pages] = await Promise.all([
-      Promise.all(imageIds.map(id => id ? getImageInfo(id) : Promise.resolve(null))),
-      getPagesByIds(pageIds.filter(Boolean)) // ✅ Usa la nueva función batch
-    ]);
-
-    // Reconstruir array completo de páginas (incluyendo nulls)
-    let pageIndex = 0;
-    const pagesWithNulls = pageIds.map(id => {
-      if (id === null) return null;
-      return pages[pageIndex++];
-    });
-
-    // ============================================
-    // PASO 5: Construir resultado
-    // ============================================
-    const experienciaConDatos = experienciaFiltrados.map((experiencia, index) => {
-      const { acf } = experiencia;
-      
-      if (!acf) {
-        console.warn(`Experiencia Erasmus sin ACF: ${experiencia.slug}`);
-        return null;
-      }
-
-      const imageData = images[index];
-      const pageData = pagesWithNulls[index];
-
-      return {
-        title: acf.experiencia_titulo || "",
-        text: acf.experiencia_texto || "",
-        ubicacion: acf.experiencia_ubicacion || "",
-        fechas: acf.experiencia_fechas || "",
-        dataLimit: acf.experiencia_data_limit || "",
-        link: pageData ? `/${pageData.lang}${pageData.categoriaSlug}/${pageData.baseSlug}` : "#",
-        imageUrl: imageData?.source_url || "",
-        imageAlt: imageData?.alt_text || "Experiencia Erasmus image",
-        content: pageDataInfo?.content?.rendered || "",
-      };
-    });
-
-    return experienciaConDatos.filter(Boolean);
+    console.log(`   [ERASMUS] Found ${experienciesFiltrados.length} experiencies Erasmus for language: ${lang}`);
     
-  } catch (error) {
-    console.error("❌ Global error in getExperienciesErasmusInfo:", error.message);
-    return [];
-  }
-}
+    result[lang] = experienciesFiltrados.map(exp => {
+      const { acf } = exp;
+      const imageData = imageMap.get(acf.experiencia_imagen);
+      const pageData = pageMap.get(acf.experiencia_link);
+      
+      const processedExperiencia = {
+        title: acf.experiencia_titulo || '',
+        text: acf.experiencia_texto || '',
+        link: pageData ? `/${pageData.lang}${pageData.categoriaSlug}/${pageData.baseSlug}` : '#',
+        imageUrl: imageData?.source_url || '',
+        imageAlt: imageData?.alt_text || 'Experiencia Erasmus image',
+        pinVoluntariat: acf.experiencia_pin_voluntariat || '',
+        pinPais: acf.experiencia_pin_pais || '',
+        content: '',
+      };
+      // console.log(`      [ERASMUS] Processed experiencia Erasmus for ${lang}:`, JSON.stringify(processedExperiencia)); // Too verbose, uncomment if really needed
+      return processedExperiencia;
+    });
+  });
+  
+  experienciesErasmusProcessedCache = result;
+  const duration = Date.now() - startTime;
+  console.log(`✅ [ERASMUS] All experiencies erasmus processed in ${duration}ms. Final structure:`, Object.keys(result).map(key => `${key}: ${result[key].length} experiencies`).join(', '));
+  
+  return result;
+};
+
+export const getExperienciesErasmusInfo = async (lang) => {
+  console.log(`📡 [ERASMUS] Request for experiencies Erasmus for language: ${lang}`);
+  const allExperiencies = await getAllExperienciesErasmusInfo();
+  return allExperiencies[lang] || [];
+};
+
+export const resetExperienciesErasmusCache = () => {
+  experienciesErasmusRawCache = null;
+  experienciesErasmusProcessedCache = null;
+  console.log('🔄 [ERASMUS] Cache cleared');
+};
