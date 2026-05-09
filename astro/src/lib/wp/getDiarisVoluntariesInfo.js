@@ -134,27 +134,34 @@ export const getAllDiarisInfo = async () => {
 };
 
 export const getDiarisVoluntariesInfo = async (lang, slug) => {
-  try {    
-    // 1. Obtener el contenido de la página principal (el texto de arriba)
-    const responsePage = await fetch(`${apiURL}/pages?slug=${slug}&_fields=content`);
-    const [pageData] = await responsePage.json();
+  console.log(`📡 [DIARIS] Getting diaris for language: ${lang}, slug: ${slug}`);
+  const startTime = Date.now();
+  
+  const allData = await getAllDiarisInfo();
+  console.log(`   [DIARIS] Received processed diaris data for all languages.`);
+  const langData = allData[lang];
+  console.log(`   [DIARIS] Extracting data for language: ${lang}. Anys: ${langData?.anys.length}, Diaris: ${langData?.diaris.length}`);
 
-    // 2. Obtener los Años (Taxonomía 'anys')
-    const responseAnys = await fetch(`${apiURL}/anys?_fields=id,name,slug`);
-    const anys = await responseAnys.json();
-
-    // 3. Obtener todos los Diarios (CPT 'diaris')
-    // Usamos _embed para que traiga la imagen destacada
-    const responseDiaris = await fetch(`${apiURL}/diaris?_embed&_fields=id,slug,title,anys,_links,_embedded`);
-    const diaris = await responseDiaris.json();
-
-    return {
-      content: pageData?.content?.rendered || "",
-      anys: anys || [],
-      diaris: diaris || []
-    };
-  } catch (error) {
-    console.error("Error obteniendo diaris voluntaries:", error);
-    return { content: "", anys: [], diaris: [] };
+  const responsePage = await fetch(`${apiURL}/pages?slug=${slug}&_fields=content`);
+  let pageDataInfo = null;
+  if (responsePage.ok) {
+    [pageDataInfo] = await responsePage.json();
+    console.log(`   [DIARIS] Fetched page content for slug: ${slug}. Content present: ${!!pageDataInfo?.content?.rendered}`);
+  } else {
+    console.error(`❌ [DIARIS] Failed to fetch page content for slug: ${slug} (status: ${responsePage.status})`);
   }
+  
+  const duration = Date.now() - startTime;
+  const result = [{
+    pageContent: pageDataInfo?.content?.rendered || '',
+    anys: langData.anys,
+    diaris: langData.diaris
+  }];  
+  return result;
+};
+
+export const resetDiarisCache = () => {
+  diarisRawCache = null;
+  diarisProcessedCache = null;
+  console.log('🔄 [DIARIS] Cache cleared');
 };
