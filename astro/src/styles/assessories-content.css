@@ -36,11 +36,16 @@
     margin-top: 0.5rem;
     margin-bottom: 0.5rem;
     gap: 1rem;
+    width: 100%;
     @media (min-width: 768px) {
         flex-direction: row;
         
     }
 
+}
+
+.assessoria-content div:has(> figure) > figure > a {
+    width: 100%;
 }
 
 .assessoria-content p, li {

@@ -4,59 +4,72 @@ import { extractLang } from "@wp/extractLang.js";
 import { 
     getOfertaDetalladaInfo,
     getExperienciaDetalladaInfo,
-    getDiariDetallatInfo
+    getDiariDetalladaInfo
 } from "@wp/index.js";
 import { getGlobalData, getAllPages } from "@wp/sharedBuildData.js";
 import Layout from "@layouts/Layout.astro";
 import OfertaDetallada from "@components/pages/OfertaDetallada.astro";
 import ExperienciaDetallada from "@components/pages/ExperienciaDetallada.astro";
-import DiariDetallat from "@components/pages/DiariDetallat.astro";
+import DiariDetallada from "@components/pages/DiariDetallada.astro";
 
 export async function getStaticPaths() {
     const languages = ["ca", "es", "en"];
     const globalData = await getGlobalData();
-    const allPages = await getAllPages(); 
-
-    // 1. Obtener diarios con _embed para traer imágenes y evitar fetch individuales después
-    const responseDiaris = await fetch(`http://localhost:8000/wp-json/wp/v2/diaris?_embed&_fields=slug,title,content,_embedded`);
-    const allDiaris = await responseDiaris.json();
-
-    // 2. Procesar páginas normales (Ofertas y Experiencias)
-    const pagePathsPromises = allPages
-        .filter(page => page.acf?.categoria)
-        .map(async (page) => {
-            const extracted = extractLang(page.slug);
-            if (!extracted || !languages.includes(extracted.lang)) return null;
-            
-            const { lang, baseSlug } = extracted;
-            const categoria = page.acf.categoria;
-            
-            let detailedData = null;
-            if (categoria === 'ofertes') detailedData = await getOfertaDetalladaInfo(page.slug);
-            else if (categoria === 'experiencies') detailedData = await getExperienciaDetalladaInfo(page.slug);
-
-            return {
-                params: { lang, slug: categoria, subslug: baseSlug },
-                props: {
-                    globalData: globalData[lang],
-                    pageData: { acf: page.acf, content: page.content?.rendered || "" },
-                    detailedData
-                }
-            };
-        });
-
-    // 3. Generar rutas para Diarios INYECTANDO los datos (Optimizado para Build rápido)
-    const diariPaths = allDiaris.flatMap((diari) => {
-        // Pre-procesamos el objeto de datos del diario aquí
-        const diariData = {
-            title: diari.title.rendered,
-            content: diari.content.rendered,
-            imageUrl: diari._embedded?.['wp:featuredmedia']?.[0]?.source_url || null,
-            imageAlt: diari._embedded?.['wp:featuredmedia']?.[0]?.alt_text || diari.title.rendered
-        };
-
-        return languages.map(lang => ({
-            params: { lang, slug: 'diari', subslug: diari.slug },
+    console.log(`✅ [${Date.now() - startTime}ms] Global data ready`);
+    
+    // ============================================
+    // ✅ OPTIMIZACIÓN 3: Páginas cacheadas
+    // ============================================
+    const allPages = await getAllPages();
+    
+    // ✅ FILTRAR: Solo páginas CON categoría (van a [subslug])
+    const detailedPages = allPages.filter(page => page.acf?.categoria);
+    console.log(`✅ [${Date.now() - startTime}ms] Found ${detailedPages.length} detailed pages`);
+    
+    // ============================================
+    // PASO 3: Fetchear datos detallados por idioma
+    // ============================================
+    console.log(`⏱️  [${Date.now() - startTime}ms] Processing detailed data for each page...`);
+    
+    const pathsPromises = detailedPages.map(async (page) => {
+        const extracted = extractLang(page.slug);
+        if (!extracted || !languages.includes(extracted.lang)) {
+            return null;
+        }
+        
+        const { lang, baseSlug } = extracted;
+        const categoria = page.acf.categoria;
+        const slugCompleto = page.slug;
+        
+        let detailedData = null;
+        const pageStartTime = Date.now();
+        
+        try {
+            if (categoria === 'ofertes') {
+                console.log(`⏱️  [${Date.now() - startTime}ms] Fetching oferta [${lang}]: ${baseSlug}`);
+                detailedData = await getOfertaDetalladaInfo(slugCompleto);
+                console.log(`✅ [${Date.now() - startTime}ms] Oferta ${baseSlug} [${lang}] done (${Date.now() - pageStartTime}ms)`);
+            } else if (categoria === 'experiencies') {
+                console.log(`⏱️  [${Date.now() - startTime}ms] Fetching experiencia [${lang}]: ${baseSlug}`);
+                detailedData = await getExperienciaDetalladaInfo(slugCompleto);
+                console.log(`✅ [${Date.now() - startTime}ms] Experiencia ${baseSlug} [${lang}] done (${Date.now() - pageStartTime}ms)`);
+            } else if (categoria === 'diaris-voluntaries') {
+                console.log(`⏱️  [${Date.now() - startTime}ms] Fetching diari [${lang}]: ${baseSlug}`);
+                detailedData = await getDiariDetalladaInfo(slugCompleto);
+                console.log(`✅ [${Date.now() - startTime}ms] Diari ${baseSlug} [${lang}] done (${Date.now() - pageStartTime}ms)`);
+            } else {
+                console.warn(`⚠️  [${Date.now() - startTime}ms] Unknown category '${categoria}' for page ${slugCompleto} [${lang}]`);
+            }
+        } catch (error) {
+            console.error(`❌ [${Date.now() - startTime}ms] Error fetching ${categoria}/${baseSlug} [${lang}]:`, error.message);
+        }
+        
+        return {
+            params: { 
+                lang, 
+                slug: categoria, 
+                subslug: baseSlug 
+            },
             props: {
                 globalData: globalData[lang],
                 pageData: { 
@@ -91,8 +104,8 @@ switch (slug) {
     case "experiencies":
         PageComponent = ExperienciaDetallada;
         break;
-    case "diari":
-        PageComponent = DiariDetallat;
+    case "diaris-voluntaries":
+        PageComponent = DiariDetallada;
         break;
     default:
         break;
