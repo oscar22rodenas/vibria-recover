@@ -1,0 +1,91 @@
+---
+import { Picture } from "astro:assets";
+import CategoryNav from "@components/CategoryNav.astro";
+import "@styles/volunteer-detallada-content.css";
+
+const { lang, slug } = Astro.params;
+const { globalData, pageData, detailedData } = Astro.props;
+
+// Use detailedData for the specific volunteer
+const volunteer = detailedData;
+const { categories } = globalData;
+---
+
+<CategoryNav lang={lang} slug={slug} categories={categories} />
+
+<article class="mx-auto bg-white p-4 space-y-4 md:px-12 lg:px-16 xl:px-20 md:mx-[15%]">
+  <h1 class="text-2xl font-700 text-red text-center md:text-3xl">{volunteer.title}</h1>
+
+  <div class="md:columns-2 md:gap-8">
+    {volunteer.imageUrl && <Picture
+      formats={["webp", "avif", "jpeg"]}
+      src={volunteer.imageUrl}
+      alt={volunteer.imageAlt}
+      width="300"
+      height="118"
+      class="mx-auto w-full h-auto"
+    />}
+
+    <div class="flex items-center gap-2 text-sm mt-2">
+      <Picture
+        formats={["webp", "avif", "jpeg"]}
+        src="/iconos/Ubicacion_Rojo.png"
+        alt="Ubicacion Icon"
+        width="24"
+        height="24"
+      />
+      <span class="text-black font-600">{volunteer.ubicacion}</span>
+    </div>
+
+    <div class="flex items-center gap-2 text-sm mt-2">
+      <Picture
+        formats={["webp", "avif", "jpeg"]}
+        src="/iconos/Reloj_Arena_Rojo.png"
+        alt="Tiempo Icon"
+        width="24"
+        height="24"
+      />
+      <span class="text-black font-600">{volunteer.fechas}</span>
+    </div>
+
+    <div class="volunteer-detallada-content" set:html={pageData.content} />
+  </div>
+  <div class="flex items-center justify-center mt-4">
+    <a
+      href={volunteer.buttonUrl}
+      class="bg-red text-white font-700 py-1 px-2 before:text-center rounded-3xl shadow-[0_2px_4px_0_px_rgba(0,0,0,0.25)]"
+    >
+      {volunteer.buttonText}
+    </a>
+  </div>
+</article>
+
+<script>
+  function setupContentLinks() {
+    const content = document.querySelector('.volunteer-detallada-content');
+    if (!content) return;
+
+    // 1. Buscar el <strong> dentro del primer <li> de un <ol class="wp-block-list"> dentro de .wp-block-group
+    const wpBlockGroup = content.querySelector('.wp-block-group');
+    if (wpBlockGroup) {
+      const firstLi = wpBlockGroup.querySelector('ol.wp-block-list > li:first-child');
+      if (firstLi) {
+        const strong = firstLi.querySelector('strong');
+        if (strong && !strong.querySelector('a')) {
+          const link = document.createElement('a');
+          link.href = 'https://youth.europa.eu/solidarity/young-people/volunteering_es';
+          link.target = '_blank';
+          link.className = 'text-red font-600 underline';
+          link.textContent = strong.textContent;
+          strong.replaceWith(link);
+        }
+      }
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupContentLinks);
+  } else {
+    setupContentLinks();
+  }
+</script>

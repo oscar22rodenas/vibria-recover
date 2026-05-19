@@ -2,8 +2,8 @@
 import CategoryNav from "@components/CategoryNav.astro";
 import "@styles/volunteer-content.css";
 
-const { pageData, globalData } = Astro.props;
-const { content } = pageData;
+const { pageData, typeSpecificData, globalData } = Astro.props;
+const { cards = [], acf = {} } = typeSpecificData;
 const { categories } = globalData;
 const { lang, slug } = Astro.params;
 ---
@@ -11,119 +11,83 @@ const { lang, slug } = Astro.params;
 <CategoryNav lang={lang} slug={slug} categories={categories} />
 
 <article class="mx-auto bg-white p-4 space-y-4 md:mx-[15%]">
-    
-  <div class="volunteer-content" set:html={content}></div>
+    <div class="volunteer-content">
+        {acf.volunteer_titulo && <h2>{acf.volunteer_titulo}</h2>}
+        {acf.volunteer_texto && <p>{acf.volunteer_texto}</p>}
 
+        <div class="general-wrapper-images">
+            {/* Sección de tarjetas del CPT */}
+            <div class="wrapper-images-1">
+                {acf.volunteer_subtitulo_1 && <strong>{acf.volunteer_subtitulo_1}</strong>}
+                {cards.slice(0, 3).map(card => (
+                    <figure>
+                        <a href={card.link}>
+                            <img src={card.imageUrl} alt={card.imageAlt} />
+                        </a>
+                    </figure>
+                ))}
+            </div>
+
+            <div class="wrapper-images-2">
+                {acf.volunteer_subtitulo_2 && <strong>{acf.volunteer_subtitulo_2}</strong>}
+                {cards.slice(3, 6).map(card => (
+                    <figure>
+                        <a href={card.link}>
+                            <img src={card.imageUrl} alt={card.imageAlt} />
+                        </a>
+                    </figure>
+                ))}
+            </div>
+        </div>
+
+        {/* Sección de Video y Texto Final (Content) */}
+        <div class="general-wrapper-text">
+            {/* Contenedor de origen oculto para que el script lo procese */}
+            <div id="content-source" set:html={pageData.content} style="display: none;"></div>
+            
+            {/* Botón final que se moverá dentro del text-wrapper */}
+            {acf.volunteer_boton_link && (
+                <div id="button-source" class="link-wrapper" style="display: none;">
+                    <a href={acf.volunteer_boton_link}>
+                        {acf.volunteer_boton_texto || 'Més informació'}
+                    </a>
+                </div>
+            )}
+        </div>
+    </div>
 </article>
 
-<script>
-  const content = document.querySelector('.volunteer-content');
+<script is:inline>
+  const wrapper = document.querySelector('.general-wrapper-text');
+  const source = document.getElementById('content-source');
+  const buttonSource = document.getElementById('button-source');
 
-  const allStrongs = content.querySelectorAll('strong');
-  const allFigures = Array.from(content.querySelectorAll('figure'));
-  
-  if (allStrongs.length >= 2) {
-    // Extraer los dos primeros strongs de sus <p> padres
-    const strong1 = allStrongs[0];
-    const strong2 = allStrongs[1];
+  if (wrapper && source) {
+    // 1. Extraer el video (figure) y los párrafos (p)
+    const videoFigure = source.querySelector('figure');
+    const paragraphs = Array.from(source.querySelectorAll('p'));
+
+    // 2. Crear el text-wrapper para agrupar texto y link (Columna 2)
+    const textWrapper = document.createElement('div');
+    textWrapper.className = 'text-wrapper';
+
+    paragraphs.forEach(p => {
+        textWrapper.appendChild(p);
+    });
+
+    // Añadir el botón al final del bloque de texto
+    if (buttonSource) {
+        buttonSource.style.display = 'flex';
+        textWrapper.appendChild(buttonSource);
+    }
+
+    // 3. Reconstruir el wrapper con la estructura de 2 columnas (Video | Texto)
+    wrapper.innerHTML = '';
     
-    // Si strong1 está dentro de un <p>, extraerlo y eliminar el <p>
-    if (strong1.parentNode.tagName === 'P') {
-      const p1 = strong1.parentNode;
-      p1.parentNode.insertBefore(strong1, p1);
-      p1.remove();
+    if (videoFigure) {
+        wrapper.appendChild(videoFigure);
     }
     
-    // Si strong2 está dentro de un <p>, extraerlo y eliminar el <p>
-    if (strong2.parentNode.tagName === 'P') {
-      const p2 = strong2.parentNode;
-      p2.parentNode.insertBefore(strong2, p2);
-      p2.remove();
-    }
-    
-    // ============================================
-    // SECCIÓN 1: Primer strong + 3 figures
-    // ============================================
-    const figures1 = allFigures.slice(0, 3);
-    
-    const div1 = document.createElement('div');
-    div1.className = 'wrapper-images-1';
-    strong1.parentNode.insertBefore(div1, strong1);
-    div1.appendChild(strong1);
-    figures1.forEach(fig => div1.appendChild(fig));
-    
-    // ============================================
-    // SECCIÓN 2: Segundo strong + 3 figures
-    // ============================================
-    const figures2 = allFigures.slice(3, 6);
-    
-    const div2 = document.createElement('div');
-    div2.className = 'wrapper-images-2';
-    strong2.parentNode.insertBefore(div2, strong2);
-    div2.appendChild(strong2);
-    figures2.forEach(fig => div2.appendChild(fig));
-    
-    // ============================================
-    // ENVOLVER AMBOS DIVS EN UN CONTENEDOR GENERAL
-    // ============================================
-    const generalWrapper1 = document.createElement('div');
-    generalWrapper1.className = 'general-wrapper-images';
-    div1.parentNode.insertBefore(generalWrapper1, div1);
-    generalWrapper1.appendChild(div1);
-    generalWrapper1.appendChild(div2);
+    wrapper.appendChild(textWrapper);
   }
-  
-  // ============================================
-  // SECCIÓN 3: Figure restante + 3 p + 1 a (dentro de p)
-  // ============================================
-  const remainingFigure = allFigures[6];
-
-  if (remainingFigure) {
-    const allPs = Array.from(content.querySelectorAll('p'));
-
-    // Tomar solo los últimos 4 p (las 3 p + la p > a)
-    const lastFourPs = allPs.slice(-4);
-    
-      // Buscar el <p> que contiene un <a> y reemplazarlo por un <div>
-      const lastP = lastFourPs[lastFourPs.length - 1];
-      const linkInP = lastP.querySelector('a');
-      
-      if (linkInP) {
-        // Crear div para reemplazar el <p>
-        const linkDiv = document.createElement('div');
-        linkDiv.className = 'link-wrapper';
-        linkDiv.appendChild(linkInP);
-        lastP.replaceWith(linkDiv);
-        // Actualizar la referencia del último elemento
-        lastFourPs[lastFourPs.length - 1] = linkDiv;
-      }
-      
-      // Crear div para envolver los 3 p + el div con link
-      const textWrapper = document.createElement('div');
-      textWrapper.className = 'text-wrapper';
-      
-      // Insertar antes del primer p
-      lastFourPs[0].parentNode.insertBefore(textWrapper, lastFourPs[0]);
-      
-      // Mover los 3 p y el div con link dentro del wrapper
-      lastFourPs.forEach((p, index) => {
-        if (index < 3) {
-          textWrapper.appendChild(p);
-        } else {
-          // El último es el div con link
-          textWrapper.appendChild(lastFourPs[lastFourPs.length - 1]);
-        }
-      });
-      
-      // ============================================
-      // ENVOLVER FIGURE + textWrapper EN UN DIV GENERAL
-      // ============================================
-      const generalWrapper2 = document.createElement('div');
-      generalWrapper2.className = 'general-wrapper-text';
-      
-      remainingFigure.parentNode.insertBefore(generalWrapper2, remainingFigure);
-      generalWrapper2.appendChild(remainingFigure);
-      generalWrapper2.appendChild(textWrapper);
-    }
-
 </script>

@@ -41,16 +41,17 @@
         flex-direction: row;
         
     }
-
 }
 
 .assessoria-content div:has(> figure) > figure > a {
     width: 100%;
 }
-
+.assessoria-content p {
+    text-align: center;
+    margin-bottom: 20px;
+}
 .assessoria-content p, li {
     font-weight: 500;
-    text-align: justify;
     @media (min-width: 768px) {
         font-size: 1rem;
     }
@@ -78,6 +79,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    width: 100%;
 }
 .assessoria-content ul {
     padding-left: 1.5rem;

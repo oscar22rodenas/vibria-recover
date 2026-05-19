@@ -4,16 +4,25 @@ import { extractLang } from "@wp/extractLang.js";
 import { 
     getOfertaDetalladaInfo,
     getExperienciaDetalladaInfo,
-    getDiariDetalladaInfo
+    getDiariDetalladaInfo,
+    getVolunteerDetalladaInfo
 } from "@wp/index.js";
 import { getGlobalData, getAllPages } from "@wp/sharedBuildData.js";
 import Layout from "@layouts/Layout.astro";
 import OfertaDetallada from "@components/pages/OfertaDetallada.astro";
 import ExperienciaDetallada from "@components/pages/ExperienciaDetallada.astro";
 import DiariDetallada from "@components/pages/DiariDetallada.astro";
+import VolunteerDetallada from "@components/pages/VolunteerDetallada.astro";
 
 export async function getStaticPaths() {
     const languages = ["ca", "es", "en"];
+    
+    console.log("🚀 [SUBSLUG] Building detailed pages...");
+    const startTime = Date.now();
+    
+    // ============================================
+    // ✅ OPTIMIZACIÓN 2: Datos globales cacheados
+    // ============================================
     const globalData = await getGlobalData();
     console.log(`✅ [${Date.now() - startTime}ms] Global data ready`);
     
@@ -57,6 +66,10 @@ export async function getStaticPaths() {
                 console.log(`⏱️  [${Date.now() - startTime}ms] Fetching diari [${lang}]: ${baseSlug}`);
                 detailedData = await getDiariDetalladaInfo(slugCompleto);
                 console.log(`✅ [${Date.now() - startTime}ms] Diari ${baseSlug} [${lang}] done (${Date.now() - pageStartTime}ms)`);
+            } else if (categoria === 'volunteer') {
+                console.log(`⏱️  [${Date.now() - startTime}ms] Fetching volunteer [${lang}]: ${baseSlug}`);
+                detailedData = await getVolunteerDetalladaInfo(slugCompleto);
+                console.log(`✅ [${Date.now() - startTime}ms] Volunteer ${baseSlug} [${lang}] done (${Date.now() - pageStartTime}ms)`);
             } else {
                 console.warn(`⚠️  [${Date.now() - startTime}ms] Unknown category '${categoria}' for page ${slugCompleto} [${lang}]`);
             }
@@ -72,32 +85,31 @@ export async function getStaticPaths() {
             },
             props: {
                 globalData: globalData[lang],
-                pageData: { 
-                    acf: { categoria: 'diari' }, 
-                    content: diari.content.rendered 
+                pageData: {
+                    acf: page.acf,
+                    content: page.content?.rendered || ""
                 },
-                detailedData: diariData // Pasamos los datos ya listos
+                detailedData
             }
-        }));
+        };
     });
-
-    const pagesResults = await Promise.all(pagePathsPromises);
-    return [...pagesResults.filter(Boolean), ...diariPaths];
+    
+    const paths = (await Promise.all(pathsPromises)).filter(Boolean);
+    
+    const endTime = Date.now();
+    const duration = ((endTime - startTime) / 1000).toFixed(2);
+    
+    console.log(`⏱️  [${Date.now() - startTime}ms] Building completed`);
+    console.log(`✅ Detailed pages built: ${paths.length} in ${duration}s (${endTime - startTime}ms total)`);
+    
+    return paths;
 }
 
-const { globalData, pageData, detailedData: initialData } = Astro.props;
-const { subslug, slug } = Astro.params;
-
-// detailedData ya vendrá de las props gracias al cambio anterior
-let detailedData = initialData;
-
-// Fallback de seguridad (solo se ejecutará en modo dev si algo falta)
-if (!detailedData && slug === 'diari') {
-    detailedData = await getDiariDetallatInfo(subslug);
-}
+const { globalData, pageData, detailedData } = Astro.props;
 
 let PageComponent;
-switch (slug) {
+
+switch (Astro.params.slug) {
     case "ofertes":
         PageComponent = OfertaDetallada;
         break;
@@ -106,6 +118,9 @@ switch (slug) {
         break;
     case "diaris-voluntaries":
         PageComponent = DiariDetallada;
+        break;
+    case "volunteer":
+        PageComponent = VolunteerDetallada;
         break;
     default:
         break;

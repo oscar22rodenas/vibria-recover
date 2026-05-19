@@ -22,6 +22,7 @@ export async function getOfertaDetalladaInfo(slug) {
 
         return {
           title: ofertaData.acf.oferta_titulo || "",
+          subtitle: ofertaData.acf.oferta_subtitulo || "",
           ubicacion: ofertaData.acf.oferta_ubicacion || "",
           fechas: ofertaData.acf.oferta_fechas || "",
           imageUrl: imageData?.source_url || "",
