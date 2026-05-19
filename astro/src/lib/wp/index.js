@@ -28,7 +28,7 @@ export { getQueFemInfo } from "./getQueFemInfo.js";
 export { getRadioVibriaInfo } from "./getRadioVibriaInfo.js";
 export { getReforeInfo } from "./getReforeInfo.js";
 export { getSendingInfo } from "./getSendingInfo.js";
-export { getVolunteerInfo } from "./getVolunteerInfo.js";
+export { getVolunteerInfo, getAllVolunteersInfo, resetVolunteersCache } from "./getVolunteerInfo.js";
 export { getVolunteerDetalladaInfo } from "./getVolunteerDetalladaInfo.js";
 export { getAllSlidesInfo, resetSlidesCache } from "./getSlidesInfo.js";
 export { getAllOfertesInfo, resetOfertesCache } from "./getOfertesInfo.js";

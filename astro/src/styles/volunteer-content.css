@@ -31,7 +31,7 @@
 .volunteer-content p {
   margin-bottom: 0.75rem;
   font-weight: 400;
-  text-align: start;
+  text-align: center;
 
   @media (min-width: 768px) {
       font-size: 1rem;
@@ -69,6 +69,10 @@
 .wrapper-images-1 img, .wrapper-images-2 img {
   width: 100%;
   height: auto;
+}
+
+.general-wrapper-text > figure {
+  width: stretch;
 }
 
 .general-wrapper-text > figure > div > iframe{

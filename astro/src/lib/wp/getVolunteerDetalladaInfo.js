@@ -4,7 +4,7 @@ import { getPageById } from "./getPageById.js";
 
 export async function getVolunteerDetalladaInfo(slug) {
   try {
-    const responseOferta = await fetch(`${apiURL}/volunteers?slug=${slug}&_fields=acf`);
+    const responseOferta = await fetch(`${apiURL}/volunteer?slug=${slug}&_fields=acf`);
     if (!responseOferta.ok) {
       throw new Error("Error al obtener los voluntarios");
     }
@@ -21,9 +21,10 @@ export async function getVolunteerDetalladaInfo(slug) {
     const pageId = pageData.acf.volunteer_boton_link ? await getPageById(pageData.acf.volunteer_boton_link) : null;
 
         return {
-          title: volunteerData.acf.volunteer_titulo || "",
-          ubicacion: volunteerData.acf.volunteer_ubicacion || "",
-          fechas: volunteerData.acf.volunteer_fechas || "",
+          title: pageData.acf.volunteer_titulo || "",
+          subtitle: pageData.acf.volunteer_subtitulo || "",
+          ubicacion: pageData.acf.volunteer_ubicacion || "",
+          fechas: pageData.acf.volunteer_fechas || "",
           imageUrl: imageData?.source_url || "",
           imageAlt: imageData?.alt_text || "volunteer image",
           content: pageData.content.rendered || "",

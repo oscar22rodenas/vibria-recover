@@ -35,12 +35,14 @@ import {
     getExperienciesErasmusInfo,
     getIntercanvisJuvenilInfo,
     getQuiSomInfo,
+    getVolunteerInfo,
     getAllSlidesInfo,
     getAllOfertesInfo,
     getAllExperienciesInfo,
     getAllExperienciesErasmusInfo,
     getAllQuiSomInfo,
-    getAllDiarisInfo
+    getAllDiarisInfo,
+    getAllVolunteersInfo
 } from "@wp/index.js";
 import { getGlobalData, getAllPages } from "@wp/sharedBuildData.js";
 
@@ -65,7 +67,8 @@ export async function getStaticPaths() {
       getAllExperienciesInfo(),
       getAllExperienciesErasmusInfo(),
       getAllQuiSomInfo(),
-      getAllDiarisInfo()
+      getAllDiarisInfo(),
+      getAllVolunteersInfo()
     ]);
     
     console.log(`✅ [${Date.now() - preLoadStart}ms] Complete pre-load finished`);
@@ -174,6 +177,20 @@ export async function getStaticPaths() {
                         buttonText: data.buttonText || '',
                         buttonUrl: data.buttonUrl || '#'
                     };
+                    break;
+                }
+                
+                case 'volunteer': {
+                    const volunteerDataArray = await getVolunteerInfo(lang, slugCompleto);
+                    const volunteerData = volunteerDataArray[0] || {};
+                    console.log(`⏱️ volunteer [${lang}] done in ${Date.now() - startTime}ms`);
+                    typeSpecificData = { 
+                        cards: volunteerData.cards || [],
+                        acf: volunteerData.acf || {}
+                    };
+                    if (volunteerData.pageContent) {
+                        pageContent = volunteerData.pageContent;
+                    }
                     break;
                 }
                 
