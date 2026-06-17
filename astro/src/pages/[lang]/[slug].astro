@@ -31,6 +31,7 @@ import {
     getSlidesInfo,
     getExperienciesInfo,
     getOfertesInfo,
+    getEnviamentInfo,
     getDiarisVoluntariesInfo,
     getExperienciesErasmusInfo,
     getIntercanvisJuvenilInfo,
@@ -123,6 +124,12 @@ export async function getStaticPaths() {
                     const ofertas = await getOfertesInfo(lang);
                     console.log(`⏱️ ofertes [${lang}] done in ${Date.now() - startTime}ms`);
                     typeSpecificData = { ofertas: ofertas || [] };
+                    break;
+                }
+                case 'enviament': {
+                    const enviamentData = await getEnviamentInfo(lang, slugCompleto);
+                    console.log(`⏱️ enviament [${lang}] done in ${Date.now() - startTime}ms`);
+                    typeSpecificData = enviamentData;
                     break;
                 }
                 case 'diaris-voluntaries': {

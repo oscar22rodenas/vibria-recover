@@ -1,17 +1,43 @@
 ---
 import CategoryNav from "@components/CategoryNav.astro";
-// import "@styles/enviament-content.css";
+import "@styles/enviament-content.css";
 
-const { pageData, globalData } = Astro.props;
-const { content } = pageData;
+const { pageData, typeSpecificData, globalData } = Astro.props;
 const { categories } = globalData;
 const { lang, slug } = Astro.params;
+
+// Data from typeSpecificData (resolved in getStaticPaths via getEnviamentInfo)
+const data = typeSpecificData[0] || {};
+const { titolPrincipal, titol1, titol2, titol3, content, buttonText, buttonUrl } = data;
 ---
 
 <CategoryNav lang={lang} slug={slug} categories={categories} />
 
-<article class="max-w-lg mx-auto bg-white p-4 space-y-4 flex md:mx-[15%]">
+<article class="mx-auto bg-white p-4 space-y-8 md:px-12 lg:px-16 md:mx-[15%]">
+  
+  {titolPrincipal && (
+    <h1 class="enviament-titulo-principal" set:html={titolPrincipal}></h1>
+  )}
+
+  <div class="enviament-header-section">
+    <div class="enviament-header-box">
+      {titol1 && <h2 class="enviament-titol-1" set:html={titol1}></h2>}
+      {titol2 && <h3 class="enviament-titol-2" set:html={titol2}></h3>}
+      {titol3 && <h4 class="enviament-titol-3" set:html={titol3}></h4>}
+    </div>
     
+    {/* La imagen de la derecha vendrá del principio del content si el usuario la pone ahí */}
+    {/* O si el content tiene una estructura de columnas, el CSS se encargará */}
+  </div>
+
   <div class="enviament-content" set:html={content}></div>
+
+  {buttonText && (
+    <div class="enviament-button-container">
+      <a href={buttonUrl} class="enviament-button">
+        {buttonText}
+      </a>
+    </div>
+  )}
 
 </article>
