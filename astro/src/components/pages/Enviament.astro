@@ -6,31 +6,31 @@ const { pageData, typeSpecificData, globalData } = Astro.props;
 const { categories } = globalData;
 const { lang, slug } = Astro.params;
 
-// Data from typeSpecificData (resolved in getStaticPaths via getEnviamentInfo)
 const data = typeSpecificData[0] || {};
 const { titolPrincipal, titol1, titol2, titol3, content, buttonText, buttonUrl } = data;
 ---
 
 <CategoryNav lang={lang} slug={slug} categories={categories} />
 
-<article class="mx-auto bg-white p-4 space-y-8 md:px-12 lg:px-16 md:mx-[15%]">
-  
+<article class="enviament-article">
+
   {titolPrincipal && (
     <h1 class="enviament-titulo-principal" set:html={titolPrincipal}></h1>
   )}
 
-  <div class="enviament-header-section">
-    <div class="enviament-header-box">
-      {titol1 && <h2 class="enviament-titol-1" set:html={titol1}></h2>}
-      {titol2 && <h3 class="enviament-titol-2" set:html={titol2}></h3>}
-      {titol3 && <h4 class="enviament-titol-3" set:html={titol3}></h4>}
+  <div class="enviament-header-grid" id="enviament-header-grid">
+    <div class="enviament-header-left">
+      <div class="enviament-header-box">
+        {titol1 && <h2 class="enviament-titol-1" set:html={titol1}></h2>}
+        {titol2 && <h3 class="enviament-titol-2" set:html={titol2}></h3>}
+        {titol3 && <h4 class="enviament-titol-3" set:html={titol3}></h4>}
+      </div>
+      <div class="enviament-header-text" id="enviament-header-text"></div>
     </div>
-    
-    {/* La imagen de la derecha vendrá del principio del content si el usuario la pone ahí */}
-    {/* O si el content tiene una estructura de columnas, el CSS se encargará */}
+    <div class="enviament-header-right" id="enviament-header-image"></div>
   </div>
 
-  <div class="enviament-content" set:html={content}></div>
+  <div id="enviament-content-root" class="enviament-content" set:html={content}></div>
 
   {buttonText && (
     <div class="enviament-button-container">
@@ -41,3 +41,227 @@ const { titolPrincipal, titol1, titol2, titol3, content, buttonText, buttonUrl }
   )}
 
 </article>
+
+<script>
+  (function() {
+    try {
+      var root = document.getElementById("enviament-content-root");
+      if (!root || !root.children.length) return;
+
+      var items = [];
+      for (var i = 0; i < root.children.length; i++) {
+        items.push(root.children[i]);
+      }
+
+      var colorYellow = function(el) {
+        // NOTE: el.style.color is normalized by the browser to "rgb(255, 199, 33)"
+        // even though the HTML has style="color:#ffc721", so comparing it to the
+        // literal hex string always fails. Read the raw attribute instead.
+        var raw = (el.getAttribute("style") || "").replace(/\s/g, "").toLowerCase();
+        return raw.indexOf("color:#ffc721") !== -1;
+      };
+
+      var isQuestion = function(el) {
+        if (el.tagName !== "P") return false;
+        if (!el.classList.contains("has-text-color")) return false;
+        if (!colorYellow(el)) return false;
+        var txt = (el.textContent || "").trim();
+        return txt.charAt(txt.length - 1) === "?";
+      };
+
+      var isFaseTitle = function(el) {
+        return el.tagName === "P" && el.children.length === 1 &&
+          el.children[0].tagName === "STRONG" &&
+          el.textContent.trim().toUpperCase().startsWith("FASE");
+      };
+
+      // ── 1. Move intro to header ──
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].classList.contains("wp-block-group")) {
+          var g = items[i];
+          var p = g.querySelector("p");
+          var fig = g.querySelector("figure");
+          var ht = document.getElementById("enviament-header-text");
+          var hi = document.getElementById("enviament-header-image");
+          if (p && ht) ht.appendChild(p);
+          if (fig && hi) hi.appendChild(fig);
+          g.remove();
+          items.splice(i, 1);
+          break;
+        }
+      }
+
+      // ── 2. Find sections ──
+      var heads = [];
+      for (var i = 0; i < items.length; i++) {
+        if (isQuestion(items[i])) heads.push(i);
+      }
+
+      if (heads.length === 0) return;
+
+      // ── 3. Build section data ──
+      var secs = [];
+      for (var s = 0; s < heads.length; s++) {
+        var body = [];
+        var end = s + 1 < heads.length ? heads[s + 1] : items.length;
+        for (var i = heads[s] + 1; i < end; i++) {
+          body.push(items[i]);
+        }
+        secs.push({ heading: items[heads[s]], body: body });
+      }
+
+      // Split secs[1] at first <figure>
+      var figSplit = -1;
+      if (secs.length > 1) {
+        for (var j = 0; j < secs[1].body.length; j++) {
+          if (secs[1].body[j].tagName === "FIGURE") { figSplit = j; break; }
+        }
+      }
+      var almaFig = null;
+      var faseBody = null;
+      if (figSplit >= 0) {
+        var before = secs[1].body.slice(0, figSplit);
+        almaFig = secs[1].body[figSplit];
+        faseBody = secs[1].body.slice(figSplit + 1);
+        secs[1].body = before;
+      }
+
+      // Find wp-block-group in last sec's body → that's the gray section
+      var grayBody = null;
+      var lastSec = secs.length - 1;
+      for (var gi = 0; gi < secs[lastSec].body.length; gi++) {
+        if (secs[lastSec].body[gi].classList && secs[lastSec].body[gi].classList.contains("wp-block-group")) {
+          grayBody = secs[lastSec].body.splice(gi);
+          break;
+        }
+      }
+
+      // ── 4. Render into root ──
+      while (root.firstChild) root.removeChild(root.firstChild);
+
+      // pair 1: secs 0 + 1
+      if (secs.length >= 2) {
+        var pair1 = document.createElement("div");
+        pair1.className = "enviament-section-pair";
+        for (var si = 0; si < 2; si++) {
+          var secEl = document.createElement("div");
+          secEl.className = "enviament-section";
+          var hw = document.createElement("div");
+          hw.className = "enviament-section-heading";
+          hw.appendChild(secs[si].heading);
+          secEl.appendChild(hw);
+          var bd = document.createElement("div");
+          bd.className = "enviament-section-body";
+          for (var k = 0; k < secs[si].body.length; k++) bd.appendChild(secs[si].body[k]);
+          secEl.appendChild(bd);
+          pair1.appendChild(secEl);
+        }
+        root.appendChild(pair1);
+      }
+
+      // Alma-27 standalone
+      if (almaFig) {
+        var iw = document.createElement("div");
+        iw.className = "enviament-image-full";
+        iw.appendChild(almaFig);
+        root.appendChild(iw);
+      }
+
+      // pair 2: fases cards + last sec side by side
+      if (secs.length >= 3) {
+        var pair2 = document.createElement("div");
+        pair2.className = "enviament-section-pair";
+
+        // Left: fases cards
+        if (faseBody && faseBody.length > 0) {
+          var fd = document.createElement("div");
+          fd.className = "enviament-fases-section";
+
+          var fg = [];
+          var cur = null;
+          for (var fi = 0; fi < faseBody.length; fi++) {
+            var el = faseBody[fi];
+            if (isFaseTitle(el)) {
+              cur = { title: el, date: null, desc: null };
+              fg.push(cur);
+            } else if (cur) {
+              if (!cur.date && el.tagName === "P" && el.classList.contains("has-text-color") && colorYellow(el)) {
+                cur.date = el;
+              } else if (!cur.desc && el.tagName === "P") {
+                cur.desc = el;
+              }
+            }
+          }
+
+          if (fg.length > 0) {
+            var fc = document.createElement("div");
+            fc.className = "enviament-fases-detall";
+            for (var fi = 0; fi < fg.length; fi++) {
+              var card = document.createElement("div");
+              card.className = "enviament-fase-card";
+
+              var t = document.createElement("div");
+              t.className = "enviament-fase-title";
+              t.appendChild(fg[fi].title);
+              card.appendChild(t);
+
+              if (fg[fi].date) {
+                var d = document.createElement("div");
+                d.className = "enviament-fase-date";
+                d.appendChild(fg[fi].date);
+                card.appendChild(d);
+              }
+              if (fg[fi].desc) {
+                var ds = document.createElement("div");
+                ds.className = "enviament-fase-desc";
+                ds.appendChild(fg[fi].desc);
+                card.appendChild(ds);
+              }
+
+              fc.appendChild(card);
+            }
+            fd.appendChild(fc);
+          }
+          pair2.appendChild(fd);
+        }
+
+        // Right wrapper (section + gray bg + button)
+        var rightWrap = document.createElement("div");
+        rightWrap.className = "enviament-section-right";
+
+        // Right: last section (països)
+        var lastSecEl = document.createElement("div");
+        lastSecEl.className = "enviament-section";
+
+        var lhw = document.createElement("div");
+        lhw.className = "enviament-section-heading";
+        lhw.appendChild(secs[lastSec].heading);
+        lastSecEl.appendChild(lhw);
+
+        var lbd = document.createElement("div");
+        lbd.className = "enviament-section-body";
+        for (var k = 0; k < secs[lastSec].body.length; k++) lbd.appendChild(secs[lastSec].body[k]);
+        lastSecEl.appendChild(lbd);
+
+        rightWrap.appendChild(lastSecEl);
+
+        // Gray bg inside right wrapper
+        if (grayBody && grayBody.length > 0) {
+          var gd = document.createElement("div");
+          gd.className = "enviament-gray-bg";
+          for (var k = 0; k < grayBody.length; k++) gd.appendChild(grayBody[k]);
+          rightWrap.appendChild(gd);
+        }
+
+        // Button inside right wrapper
+        var btn = document.querySelector(".enviament-button-container");
+        if (btn) rightWrap.appendChild(btn);
+
+        pair2.appendChild(rightWrap);
+        root.appendChild(pair2);
+      }
+    } catch (e) {
+      console.error("Enviament error:", e);
+    }
+  })();
+</script>

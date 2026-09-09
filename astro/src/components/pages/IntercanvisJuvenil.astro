@@ -1,45 +1,48 @@
 ---
 import { Picture } from "astro:assets";
 import CategoryNav from "@components/CategoryNav.astro";
-import "@styles/intercanvis-juvenil-content.css";
+import "@styles/intercanvis-content.css";
 
-const { lang, slug } = Astro.params;
-const { globalData, pageData, typeSpecificData } = Astro.props;
-
-const experiencies = typeSpecificData.experiencias || [];
+const { typeSpecificData, globalData, pageData } = Astro.props;
+const intercanvis = typeSpecificData.intercanvis || [];
 const { categories } = globalData;
+const { lang, slug } = Astro.params;
 ---
 
 <CategoryNav lang={lang} slug={slug} categories={categories} />
 
-<article class="intercanvis-juvenil-contenidor md:mx-[15%]">
-  <h2>Ultimes Ofertas</h2>
+<article class="mx-auto bg-white p-4 space-y-4 md:mx-[15%]">
 
-  <div class="p-4 grid grid-cols-1 gap-5 md:grid-cols-2">
+  <div
+    id="intercanvis-grid"
+    class="pb-6 grid grid-cols-1 gap-5 md:grid-cols-2 md:px-12 lg:px-16 xl:px-20"
+  >
     {
-      experiencies.map((experiencia) => (
+      intercanvis.map((intercanvi) => (
         <a
-          href={experiencia.link}
-          class="flex flex-col justify-center items-center gap-2 mb-5 bg-gray-100 shadow-[0_4px_4px_rgba(0,0,0,0.25)] pt-4 pb-1 px-4"
+          href={intercanvi.link}
+          class="flex flex-col justify-center items-center gap-2 mb-5 bg-gray-100 shadow-[0_4px_4px_rgba(0,0,0,0.25)] pt-4 pb-1"
         >
           <div class="relative">
-            <Picture
-              formats={["webp", "avif", "jpeg"]}
-              src={experiencia.imageUrl}
-              alt={experiencia.imageAlt}
-              width="320"
-              height="126"
-            />
+            {intercanvi.imageUrl && (
+              <Picture
+                formats={["webp", "avif", "jpeg"]}
+                src={intercanvi.imageUrl}
+                alt={intercanvi.imageAlt}
+                width="300"
+                height="126"
+              />
+            )}
 
-            <h4 class="absolute bottom-0 inset-x-16 text-h4 font-700 bg-blue text-center text-white px-2">
-              {experiencia.title}
+            <h4 class="absolute bottom-0 inset-x-16 text-h4 font-700 bg-[#81aef6] text-center text-white px-2">
+              {intercanvi.title}
             </h4>
           </div>
-          <p class="text-sm text-black font-400 text-center">
-            {experiencia.text}
+          <p class="text-sm px-4 flex-grow text-black font-400 text-center">
+            {intercanvi.text}
           </p>
 
-          <div class="flex flex-row items-center justify-between w-full">
+          <div class="flex flex-row items-center justify-evenly gap-8 w-full">
             <div class="flex flex-row items-center gap-1">
               <Picture
                 formats={["webp", "avif", "jpeg"]}
@@ -49,7 +52,7 @@ const { categories } = globalData;
                 height="24"
               />
               <span class="text-sm text-black font-700">
-                {experiencia.ubicacion}
+                {intercanvi.ubicacion}
               </span>
             </div>
             <div class="flex flex-row items-center gap-1">
@@ -60,14 +63,12 @@ const { categories } = globalData;
                 width="24"
                 height="24"
               />
-              <span class="text-sm text-black font-700">
-                {experiencia.fechas}
-              </span>
+              <span class="text-sm text-black font-700">{intercanvi.fechas}</span>
             </div>
           </div>
 
-          <p class="border-t border-black pt-1 text-sm text-blue font-400">
-            {experiencia.dataLimit}
+          <p class="border-t border-black text-center w-full pt-1 text-sm text-[#81aef6] font-400">
+            {intercanvi.dataLimit}
           </p>
         </a>
       ))
@@ -75,7 +76,29 @@ const { categories } = globalData;
   </div>
 
   <div
-    class="intercanvis-juvenil-content py-8"
+    id="intercanvis-content"
+    class="text-[#81aef6] text-center text-h2 font-700 py-8 intercanvis-content"
     set:html={pageData.content}
   />
 </article>
+
+<script>
+  const content = document.getElementById("intercanvis-content");
+  const grid = document.getElementById("intercanvis-grid");
+
+  if (content && grid) {
+    const firstH2 = content.querySelector("h2");
+    if (firstH2) {
+      const h2Wrapper = document.createElement("div");
+      h2Wrapper.className = content.className;
+      grid.before(h2Wrapper);
+      h2Wrapper.appendChild(firstH2);
+    }
+
+    const pWrapper = document.createElement("div");
+    pWrapper.className = "w-full md:columns-2 md:gap-x-10";
+
+    content.querySelectorAll("p").forEach((p) => pWrapper.appendChild(p));
+    content.appendChild(pWrapper);
+  }
+</script>

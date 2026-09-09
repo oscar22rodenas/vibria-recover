@@ -3,7 +3,7 @@ import CategoryNav from "@components/CategoryNav.astro";
 import "@styles/volunteer-content.css";
 
 const { pageData, typeSpecificData, globalData } = Astro.props;
-const { cards = [], acf = {} } = typeSpecificData;
+const { cards = [], acf = {}, buttonUrl = '#' } = typeSpecificData;
 const { categories } = globalData;
 const { lang, slug } = Astro.params;
 ---
@@ -46,9 +46,9 @@ const { lang, slug } = Astro.params;
             <div id="content-source" set:html={pageData.content} style="display: none;"></div>
             
             {/* Botón final que se moverá dentro del text-wrapper */}
-            {acf.volunteer_boton_link && (
+            {buttonUrl !== '#' && (
                 <div id="button-source" class="link-wrapper" style="display: none;">
-                    <a href={acf.volunteer_boton_link}>
+                    <a href={buttonUrl}>
                         {acf.volunteer_boton_texto || 'Més informació'}
                     </a>
                 </div>

@@ -1,17 +1,19 @@
-import { apiURL } from "./config.js";
+import { createListLoader } from "./createListLoader.js";
 
-export const getFormacionsInfo = async (lang, slug) => {
-  try {    
-    const responsePage = await fetch(`${apiURL}/pages?slug=${slug}&_fields=content`);
-    if (!responsePage.ok) {
-      throw new Error("Error al obtener la página");
-    }
-    const [pageData] = await responsePage.json();
-        return {
-          content: pageData.content.rendered || "",
-        };
-  } catch (error) {
-    console.error("Error obteniendo experiencies:", error);
-    return [];
+const loader = createListLoader({
+  endpoint: "formacions_erasmus",
+  imageField: "formacion_imagen",
+  linkField: "formacion_link",
+  imageAlt: "Formació image",
+  fields: {
+    title: "formacion_titulo",
+    text: "formacion_texto",
+    ubicacion: "formacion_ubicacion",
+    fechas: "formacion_fechas",
+    dataLimit: "formacion_data_limit"
   }
-};
+});
+
+export const getAllFormacionsInfo = loader.getAll;
+export const getFormacionsInfo = loader.getByLang;
+export const resetFormacionsCache = loader.reset;

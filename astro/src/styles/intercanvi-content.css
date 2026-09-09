@@ -1,0 +1,68 @@
+.intercanvi-content {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+}
+
+.intercanvi-content h2 {
+  color: #81aef6;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-top: 0.75rem;
+}
+
+.intercanvi-content p {
+  font-weight: 400;
+  font-size: 15px;
+  margin-bottom: 0.75rem;
+}
+
+.intercanvi-content hr {
+  border: 0.5px solid #00000040
+}
+
+.intercanvi-content ul {
+  list-style: disc;
+  padding-left: 1rem;
+  margin-bottom: 0.5rem;
+  font-size: 15px;
+}
+
+.intercanvi-content li {
+  margin-bottom: 0.25rem;
+}
+
+.intercanvi-content strong {
+  font-weight: 700;
+}
+
+.intercanvi-content div {
+  background-color: #EAEAEA;
+  padding: 10px;
+  border: 0.5px solid #81aef6;
+  border-radius: 5px;
+  margin-top: 30px;
+}
+
+.intercanvi-content div h2 {
+  text-align: center;
+  margin-top: 0;
+  font-weight: 600;
+}
+
+.intercanvi-content div ol {
+  list-style: decimal;
+  margin: 0 20px;
+}
+
+.intercanvi-content div ol li {
+  line-height: normal;
+  font-weight: 400;
+}
+
+.intercanvi-content a {
+  color: #000000;
+  text-decoration: underline;
+  font-weight: 700;
+}

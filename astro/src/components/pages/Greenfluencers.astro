@@ -1,16 +1,244 @@
 ---
 import CategoryNav from "@components/CategoryNav.astro";
-// import "@styles/playground-content.css";
+import "@styles/greenfluencers-content.css";
 
-const { pageData, globalData } = Astro.props;
-const { content } = pageData;
+const { pageData, typeSpecificData, globalData } = Astro.props;
 const { categories } = globalData;
-const { lang, slug } = Astro.params;
+const { lang } = Astro.params;
+
+const acf = typeSpecificData.acf || {};
+const anys = typeSpecificData.anys || [];
+const news = typeSpecificData.news || [];
+
+const mainTitle = acf.greenfluencers_titulo || "";
+const buttonText = acf.greenfluencers_boton_texto || "";
+const buttonLink = acf.greenfluencers_boton_link || "#";
+const memoriaTitle = acf.greenfluencers_titulo_memoria || "Memòria d'activitats";
+
+// Extract base title from content for the year filter heading
+const basePageContent = pageData.content || "";
+const baseTitleMatch = basePageContent.match(/<h2[^>]*>(.*?)<\/h2>/i);
+const baseTitle = baseTitleMatch ? baseTitleMatch[1] : memoriaTitle;
 ---
 
-<CategoryNav lang={lang} slug={slug} categories={categories} />
-<article class="max-w-lg mx-auto bg-white p-4 space-y-4 flex md:mx-[15%]">
-    
-  <div class="greenfluencers-content" set:html={content}></div>
+<div class="md:sticky md:float-left w-full md:top-[160px] md:w-[15%]">
+  <CategoryNav class="md:w-full" lang={lang} slug={pageData.slug} categories={categories} />
 
+  <aside
+    class="md:h-full md:float-left sticky top-[120px] z-20 md:top-[160px] md:mx-5"
+    id="greenfluencers-years-nav"
+  >
+    <ul
+      class="flex gap-6 px-4 my-3 overflow-x-auto whitespace-nowrap md:flex-col md:bg-transparent md:text-wrap md:border-b-transparent md:gap-2 md:border-l border-pink md:overflow-x-hidden"
+    >
+      {
+        anys.map((any) => (
+          <li>
+            <a
+              href={`/${lang}/${pageData.slug}?any=${any.slug}`}
+              class="any-link text-sm block text-pink hover:text-orange"
+              data-slug={any.slug}
+            >
+              {any.name}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </aside>
+</div>
+
+<article class="mx-auto bg-white p-4 space-y-4 md:mx-[15%]">
+  {mainTitle && (
+    <h1 class="text-3xl font-bold text-center text-pink mt-8 mb-2">{mainTitle}</h1>
+  )}
+
+  <div id="greenfluencers-content-root" class="greenfluencers-content" set:html={basePageContent}></div>
+
+  {memoriaTitle && (
+    <h2
+      id="memoria-title"
+      class="text-2xl font-bold text-center text-pink mt-8 mb-2"
+    >{memoriaTitle}</h2>
+  )}
+
+  <h2
+    id="year-heading"
+    class="text-xl font-bold text-center text-white bg-[#004c00] mx-auto py-2 px-8 rounded-full hidden md:block"
+  ></h2>
+
+  <div
+    id="news-grid"
+    class="grid grid-cols-2 gap-6 md:grid-cols-2 lg:grid-cols-3"
+  >
+    {
+      news.map((item) => {
+        return (
+          <div
+            class="news-card flex flex-col items-center"
+            data-years={JSON.stringify(item.anyIds)}
+          >
+            {item.imageUrl && (
+              <img
+                src={item.imageUrl}
+                alt={item.imageAlt || item.title}
+                class="w-full"
+              />
+            )}
+            {item.description && (
+              <p class="text-sm text-center mt-2 text-black font-medium">{item.description}</p>
+            )}
+          </div>
+        );
+      })
+    }
+  </div>
 </article>
+
+<script is:inline define:vars={{ buttonText, buttonLink, anys, pageSlug: pageData.slug, lang }}>
+  (function() {
+    // =============================
+    // CONTENT PROCESSING
+    // =============================
+    var root = document.getElementById("greenfluencers-content-root");
+    if (root) {
+      var isColor = function(el, hex) {
+        var raw = (el.getAttribute("style") || "").replace(/\s/g, "").toLowerCase();
+        return raw.indexOf("color:" + hex.toLowerCase()) !== -1;
+      };
+
+      // 1. Merge the colored <p> (before first <figure>) with its previous sibling <p>
+      var children = [];
+      for (var i = 0; i < root.children.length; i++) {
+        children.push(root.children[i]);
+      }
+
+      var firstFigIdx = -1;
+      for (var i = 0; i < children.length; i++) {
+        if (children[i].tagName === "FIGURE") {
+          firstFigIdx = i;
+          break;
+        }
+      }
+
+      if (firstFigIdx > -1) {
+        // Find colored p before first figure
+        for (var i = 0; i < firstFigIdx; i++) {
+          if (children[i].tagName === "P" && isColor(children[i], "#fc8975")) {
+            var prevEl = children[i].previousElementSibling;
+            if (prevEl && prevEl.tagName === "P") {
+              prevEl.textContent = (prevEl.textContent || "").trim() + " " + (children[i].textContent || "").trim();
+              children[i].remove();
+              firstFigIdx--;
+            }
+            break;
+          }
+        }
+      }
+
+      // 2. Insert button after the 2nd top-level <p>
+      if (buttonText) {
+        var pCount = 0;
+        var insertAfter = null;
+        for (var i = 0; i < root.children.length; i++) {
+          if (root.children[i].tagName === "P") {
+            pCount++;
+            if (pCount === 2) {
+              insertAfter = root.children[i];
+              break;
+            }
+          } else {
+            break;
+          }
+        }
+
+        if (insertAfter) {
+          var btn = document.createElement("a");
+          btn.href = buttonLink || "#";
+          btn.target = "_blank";
+          btn.rel = "noopener noreferrer";
+          btn.className = "inline-block bg-[#004c00] text-white px-7 py-2 rounded-full font-medium text-center";
+          btn.textContent = buttonText;
+          insertAfter.insertAdjacentElement("afterend", btn);
+        }
+      }
+
+      // 3. Wrap the two .wp-block-group divs in a grid
+      var groups = root.querySelectorAll(".wp-block-group");
+      if (groups.length >= 2) {
+        var wrapper = document.createElement("div");
+        wrapper.className = "grid grid-cols-1 md:grid-cols-2 gap-6 w-full";
+        var g1 = groups[0];
+        var g2 = groups[1];
+        g1.parentNode.insertBefore(wrapper, g1);
+        wrapper.appendChild(g1);
+        wrapper.appendChild(g2);
+      }
+
+      // 4. Remove the "Memòria d'activitats" <p> from content (it comes from ACF)
+      for (var i = root.children.length - 1; i >= 0; i--) {
+        var el = root.children[i];
+        if (el.tagName === "P" && isColor(el, "#fc8975") && el.textContent.indexOf("Memòria") !== -1) {
+          el.remove();
+          break;
+        }
+      }
+    }
+
+    // =============================
+    // YEAR FILTERING
+    // =============================
+    function filterByYear() {
+      var url = new URL(window.location);
+      var selectedSlug = url.searchParams.get("any");
+      var yearHeadingEl = document.getElementById("year-heading");
+      var selectedAnyObj = null;
+      var selectedId = null;
+
+      if (!selectedSlug && anys.length > 0) {
+        selectedSlug = anys[0].slug;
+        url.searchParams.set("any", selectedSlug);
+        window.history.replaceState({}, "", url);
+      }
+
+      if (selectedSlug) {
+        for (var i = 0; i < anys.length; i++) {
+          if (anys[i].slug === selectedSlug) {
+            selectedAnyObj = anys[i];
+            break;
+          }
+        }
+        selectedId = selectedAnyObj ? selectedAnyObj.id : null;
+        if (yearHeadingEl && selectedAnyObj) {
+          yearHeadingEl.textContent = selectedAnyObj.name;
+          yearHeadingEl.style.display = "block";
+        }
+      }
+
+      document.querySelectorAll(".any-link").forEach(function(link) {
+        if (link.dataset.slug === selectedSlug) {
+          link.classList.add("text-red", "font-bold", "border-b-2", "border-red");
+          link.classList.remove("text-pink");
+        } else {
+          link.classList.remove("text-red", "font-bold", "border-b-2", "border-red");
+          link.classList.add("text-pink");
+        }
+      });
+
+      var cards = document.querySelectorAll(".news-card");
+      cards.forEach(function(card) {
+        var cardYears = JSON.parse(card.dataset.years || "[]");
+        if (selectedId && cardYears.indexOf(selectedId) !== -1) {
+          card.style.display = "flex";
+        } else if (!selectedId) {
+          card.style.display = "flex";
+        } else {
+          card.style.display = "none";
+        }
+      });
+    }
+
+    filterByYear();
+    window.addEventListener("popstate", filterByYear);
+  })();
+</script>

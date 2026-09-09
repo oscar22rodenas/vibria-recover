@@ -1,5 +1,4 @@
 import { apiURL } from "./config.js";
-import { getPagesByIds } from "./getPageById.js";
 
 export const getEnviamentInfo = async (lang, slug) => {
   try {    
@@ -8,12 +7,6 @@ export const getEnviamentInfo = async (lang, slug) => {
       throw new Error("Error al obtener la página");
     }
     const [pageData] = await responsePage.json();
-    
-    const buttonPageId = pageData?.acf?.enviament_boton_link;
-    let buttonData = null;
-    if (buttonPageId) {
-      buttonData = (await getPagesByIds([buttonPageId]))[0];
-    }
 
     return [{
       content: pageData.content.rendered || "",
@@ -22,7 +15,7 @@ export const getEnviamentInfo = async (lang, slug) => {
       titol2: pageData.acf?.enviament_titulo_2 || "",
       titol3: pageData.acf?.enviament_titulo_3 || "",
       buttonText: pageData.acf?.enviament_boton_texto || "",
-      buttonUrl: buttonData ? `/${buttonData.lang}${buttonData.categoriaSlug}/${buttonData.baseSlug}` : "#"
+      buttonUrl: pageData.acf?.enviament_boton_link || "#"
     }];
   } catch (error) {
     console.error("Error obteniendo enviament:", error);

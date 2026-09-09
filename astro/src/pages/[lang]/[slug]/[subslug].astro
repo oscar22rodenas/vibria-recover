@@ -4,8 +4,11 @@ import { extractLang } from "@wp/extractLang.js";
 import { 
     getOfertaDetalladaInfo,
     getExperienciaDetalladaInfo,
+    getExperienciaErasmusDetalladaInfo,
     getDiariDetalladaInfo,
-    getVolunteerDetalladaInfo
+    getVolunteerDetalladaInfo,
+    getFormacioDetalladaInfo,
+    getIntercanviDetalladaInfo
 } from "@wp/index.js";
 import { getGlobalData, getAllPages } from "@wp/sharedBuildData.js";
 import Layout from "@layouts/Layout.astro";
@@ -13,6 +16,9 @@ import OfertaDetallada from "@components/pages/OfertaDetallada.astro";
 import ExperienciaDetallada from "@components/pages/ExperienciaDetallada.astro";
 import DiariDetallada from "@components/pages/DiariDetallada.astro";
 import VolunteerDetallada from "@components/pages/VolunteerDetallada.astro";
+import FormacioDetallada from "@components/pages/FormacioDetallada.astro";
+import IntercanviDetallada from "@components/pages/IntercanviDetallada.astro";
+import ExperienciaErasmusDetallada from "@components/pages/ExperienciaErasmusDetallada.astro";
 
 export async function getStaticPaths() {
     const languages = ["ca", "es", "en"];
@@ -56,20 +62,32 @@ export async function getStaticPaths() {
         try {
             if (categoria === 'ofertes') {
                 console.log(`⏱️  [${Date.now() - startTime}ms] Fetching oferta [${lang}]: ${baseSlug}`);
-                detailedData = await getOfertaDetalladaInfo(slugCompleto);
+                detailedData = await getOfertaDetalladaInfo(slugCompleto, page);
                 console.log(`✅ [${Date.now() - startTime}ms] Oferta ${baseSlug} [${lang}] done (${Date.now() - pageStartTime}ms)`);
             } else if (categoria === 'experiencies') {
                 console.log(`⏱️  [${Date.now() - startTime}ms] Fetching experiencia [${lang}]: ${baseSlug}`);
-                detailedData = await getExperienciaDetalladaInfo(slugCompleto);
+                detailedData = await getExperienciaDetalladaInfo(slugCompleto, page);
                 console.log(`✅ [${Date.now() - startTime}ms] Experiencia ${baseSlug} [${lang}] done (${Date.now() - pageStartTime}ms)`);
             } else if (categoria === 'diaris-voluntaries') {
                 console.log(`⏱️  [${Date.now() - startTime}ms] Fetching diari [${lang}]: ${baseSlug}`);
-                detailedData = await getDiariDetalladaInfo(slugCompleto);
+                detailedData = await getDiariDetalladaInfo(slugCompleto, page);
                 console.log(`✅ [${Date.now() - startTime}ms] Diari ${baseSlug} [${lang}] done (${Date.now() - pageStartTime}ms)`);
             } else if (categoria === 'volunteer') {
                 console.log(`⏱️  [${Date.now() - startTime}ms] Fetching volunteer [${lang}]: ${baseSlug}`);
-                detailedData = await getVolunteerDetalladaInfo(slugCompleto);
+                detailedData = await getVolunteerDetalladaInfo(slugCompleto, page);
                 console.log(`✅ [${Date.now() - startTime}ms] Volunteer ${baseSlug} [${lang}] done (${Date.now() - pageStartTime}ms)`);
+            } else if (categoria === 'formacions') {
+                console.log(`⏱️  [${Date.now() - startTime}ms] Fetching formació [${lang}]: ${baseSlug}`);
+                detailedData = await getFormacioDetalladaInfo(slugCompleto, page);
+                console.log(`✅ [${Date.now() - startTime}ms] Formació ${baseSlug} [${lang}] done (${Date.now() - pageStartTime}ms)`);
+            } else if (categoria === 'intercanvis-juvenil') {
+                console.log(`⏱️  [${Date.now() - startTime}ms] Fetching intercanvi [${lang}]: ${baseSlug}`);
+                detailedData = await getIntercanviDetalladaInfo(slugCompleto, page);
+                console.log(`✅ [${Date.now() - startTime}ms] Intercanvi ${baseSlug} [${lang}] done (${Date.now() - pageStartTime}ms)`);
+            } else if (categoria === 'erasmus-experiencies') {
+                console.log(`⏱️  [${Date.now() - startTime}ms] Fetching experiencia erasmus [${lang}]: ${baseSlug}`);
+                detailedData = await getExperienciaErasmusDetalladaInfo(slugCompleto, page);
+                console.log(`✅ [${Date.now() - startTime}ms] Experiencia Erasmus ${baseSlug} [${lang}] done (${Date.now() - pageStartTime}ms)`);
             } else {
                 console.warn(`⚠️  [${Date.now() - startTime}ms] Unknown category '${categoria}' for page ${slugCompleto} [${lang}]`);
             }
@@ -121,6 +139,15 @@ switch (Astro.params.slug) {
         break;
     case "volunteer":
         PageComponent = VolunteerDetallada;
+        break;
+    case "formacions":
+        PageComponent = FormacioDetallada;
+        break;
+    case "intercanvis-juvenil":
+        PageComponent = IntercanviDetallada;
+        break;
+    case "erasmus-experiencies":
+        PageComponent = ExperienciaErasmusDetallada;
         break;
     default:
         break;

@@ -1,17 +1,103 @@
 ---
+import { Picture } from "astro:assets";
 import CategoryNav from "@components/CategoryNav.astro";
-// import "@styles/formacions-content.css";
+import "@styles/formacions-content.css";
 
-const { pageData, globalData } = Astro.props;
-const { content } = pageData;
+const { typeSpecificData, globalData, pageData } = Astro.props;
+const formacions = typeSpecificData.formacions || [];
 const { categories } = globalData;
 const { lang, slug } = Astro.params;
 ---
 
 <CategoryNav lang={lang} slug={slug} categories={categories} />
 
-<article class="max-w-lg mx-auto bg-white p-4 space-y-4 flex md:mx-[15%]">
-    
-  <div class="formacions-content" set:html={content}></div>
+<article class="mx-auto bg-white p-4 space-y-4 md:mx-[15%]">
 
+  <div
+    id="formacions-grid"
+    class="pb-6 grid grid-cols-1 gap-5 md:grid-cols-2 md:px-12 lg:px-16 xl:px-20"
+  >
+    {
+      formacions.map((formacio) => (
+        <a
+          href={formacio.link}
+          class="flex flex-col justify-center items-center gap-2 mb-5 bg-gray-100 shadow-[0_4px_4px_rgba(0,0,0,0.25)] pt-4 pb-1"
+        >
+          <div class="relative">
+            {formacio.imageUrl && (
+              <Picture
+                formats={["webp", "avif", "jpeg"]}
+                src={formacio.imageUrl}
+                alt={formacio.imageAlt}
+                width="300"
+                height="126"
+              />
+            )}
+
+            <h4 class="absolute bottom-0 inset-x-16 text-h4 font-700 bg-[#81aef6] text-center text-white px-2">
+              {formacio.title}
+            </h4>
+          </div>
+          <p class="text-sm px-4 flex-grow text-black font-400 text-center">
+            {formacio.text}
+          </p>
+
+          <div class="flex flex-row items-center justify-evenly gap-8 w-full">
+            <div class="flex flex-row items-center gap-1">
+              <Picture
+                formats={["webp", "avif", "jpeg"]}
+                src="/iconos/Ubicacion_Negro.png"
+                alt="Ubicacion Icon"
+                width="24"
+                height="24"
+              />
+              <span class="text-sm text-black font-700">
+                {formacio.ubicacion}
+              </span>
+            </div>
+            <div class="flex flex-row items-center gap-1">
+              <Picture
+                formats={["webp", "avif", "jpeg"]}
+                src="/iconos/Reloj_Arena_Negro.png"
+                alt="Tiempo Icon"
+                width="24"
+                height="24"
+              />
+              <span class="text-sm text-black font-700">{formacio.fechas}</span>
+            </div>
+          </div>
+
+          <p class="border-t border-black text-center w-full pt-1 text-sm text-[#81aef6] font-400">
+            {formacio.dataLimit}
+          </p>
+        </a>
+      ))
+    }
+  </div>
+  <div
+    id="formacions-content"
+    class="text-[#81aef6] text-center text-h2 font-700 py-8 formacions-content"
+    set:html={pageData.content}
+  />
 </article>
+
+<script>
+  const content = document.getElementById("formacions-content");
+  const grid = document.getElementById("formacions-grid");
+
+  if (content && grid) {
+    const firstH2 = content.querySelector("h2");
+    if (firstH2) {
+      const h2Wrapper = document.createElement("div");
+      h2Wrapper.className = content.className;
+      grid.before(h2Wrapper);
+      h2Wrapper.appendChild(firstH2);
+    }
+
+    const pWrapper = document.createElement("div");
+    pWrapper.className = "w-full md:columns-2 md:gap-x-10";
+
+    content.querySelectorAll("p").forEach((p) => pWrapper.appendChild(p));
+    content.appendChild(pWrapper);
+  }
+</script>

@@ -3,46 +3,87 @@ import { Picture } from "astro:assets";
 import CategoryNav from "@components/CategoryNav.astro";
 import "@styles/experiencies-erasmus-content.css";
 
-const { lang, slug } = Astro.params;
-const { globalData, pageData, typeSpecificData } = Astro.props;
-
+const { pageData, typeSpecificData, globalData } = Astro.props;
 const experiencies = typeSpecificData.experiencias || [];
+
 const { categories } = globalData;
 
+const { lang, slug } = Astro.params;
+const pin = Astro.url.searchParams.get("pin");
+
+const filteredExperiencies = pin
+  ? experiencies.filter((e) => e.pinVoluntariat === pin || e.pinPais === pin)
+  : experiencies;
 ---
 
 <CategoryNav lang={lang} slug={slug} categories={categories} />
 
-<div class="experiencies-content md:mx-[15%]" set:html={pageData.content}></div>
+<article class="mx-auto bg-white p-4 space-y-4 md:mx-[15%]">
+  <div class="experiencies-content" set:html={pageData.content} />
 
-<div class="p-4 grid grid-cols-1 gap-5 md:grid-cols-2 md:mx-[15%]">
-  {
-    experiencies.map((experiencia) => (
-      
-    <a href={experiencia.link} class="flex flex-col justify-center items-center gap-2 mb-5 bg-gray-100 shadow-[0_4px_4px_rgba(0,0,0,0.25)] pt-4 pb-1">
-      <div class="relative">
-        <Picture formats={['webp', 'avif', 'jpeg']} src={experiencia.imageUrl} alt={experiencia.imageAlt} width="300" height="126"/>
+  <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+    {
+      filteredExperiencies.map((experiencia) => (
+        <div
+          id="card"
+          class="flex flex-col justify-center items-center gap-2 pb-2 mb-5 bg-gray-100 shadow-[0_4px_4px_rgba(0,0,0,0.25)] lg:mb-0"
+          data-voluntariat={experiencia.pinVoluntariat}
+          data-pais={experiencia.pinPais}
+        >
+          <a
+            href={experiencia.link}
+            class="flex flex-col items-center pt-1  px-4"
+          >
+            <h4 class="text-h4 font-700 text-[#81aef6] text-center px-2">
+              {experiencia.title}
+            </h4>
+            {experiencia.imageUrl && (
+              <Picture
+                formats={["webp", "avif", "jpeg"]}
+                src={experiencia.imageUrl}
+                alt={experiencia.imageAlt}
+                width="326"
+                height="126"
+              />
+            )}
 
-        <h4 class="absolute bottom-0 inset-x-16 text-h4 font-700 bg-blue text-center text-white px-2">
-          {experiencia.title}
-        </h4>
-      </div>
-      <p class="text-sm px-4 flex-grow text-black font-400 text-center">{experiencia.text}</p>
-
-      <div class="flex flex-row items-center justify-evenly gap-8 w-full">
-        <div class="flex flex-row items-center gap-1">
-          <Picture formats={['webp', 'avif', 'jpeg']} src="/iconos/Ubicacion_Negro.png" alt="Ubicacion Icon" width="24" height="24"/>
-          <span class="text-sm text-black font-700">{experiencia.ubicacion}</span>
+            <p class="text-sm text-black font-normal text-center lg:text-[15px] lg:px-4 lg:py-0">
+              {experiencia.text}
+            </p>
+          </a>
+          <div class="flex justify-center flex-row gap-x-4 gap-y-2 px-4 whitespace-nowrap text-center">
+            <a
+              href={`/${lang}/${slug}?pin=${experiencia.pinVoluntariat}`}
+              class="bg-[#81aef6] text-sm text-white font-700 py-0.5 px-2 rounded-3xl"
+            >
+              {experiencia.pinVoluntariat}
+            </a>
+            <a
+              href={`/${lang}/${slug}?pin=${experiencia.pinPais}`}
+              class="bg-[#81aef6] text-sm text-white font-700 py-0.5 px-2 rounded-3xl"
+            >
+              {experiencia.pinPais}
+            </a>
+          </div>
         </div>
-        <div class="flex flex-row items-center gap-1">
-          <Picture formats={['webp', 'avif', 'jpeg']} src="/iconos/Reloj_Arena_Negro.png" alt="Tiempo Icon" width="24" height="24"/>
-          <span class="text-sm text-black font-700">{experiencia.fechas}</span>
-        </div>
-      </div>
+      ))
+    }
+  </div>
+</article>
 
-      <p class="border-t border-black text-center w-full pt-1 text-sm text-blue font-400">
-        {experiencia.dataLimit}
-      </p>
-    </a>
-  ))} 
-</div>
+<script is:inline>
+  const params = new URLSearchParams(window.location.search);
+  const pin = params.get("pin")?.toLowerCase();
+
+  if (pin) {
+    const cards = document.querySelectorAll("#card");
+
+    cards.forEach((card) => {
+      const voluntariat = card.dataset.voluntariat?.toLowerCase();
+      const pais = card.dataset.pais?.toLowerCase();
+      const match = voluntariat === pin || pais === pin;
+
+      card.style.display = match ? "block" : "none";
+    });
+  }
+</script>

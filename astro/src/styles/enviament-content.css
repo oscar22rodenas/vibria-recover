@@ -1,126 +1,275 @@
-.enviament-titulo-principal {
-  color: #81AEF6;
-  font-weight: 700;
-  font-size: 1.875rem;
-  text-align: center;
-  position: relative;
-  padding-bottom: 0.5rem;
-  margin-bottom: 2rem;
-  text-transform: uppercase;
+/* ── Layout global ── */
+.enviament-article {
+  margin: 0 auto;
+  background-color: #FFFFFF;
+  padding: 1rem;
 }
 
-.enviament-titulo-principal::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 150px;
-  height: 4px;
-  background-color: #81AEF6;
+@media (min-width: 768px) {
+  .enviament-article {
+    padding: 1rem 3rem 2rem;
+    margin-left: 15%;
+    margin-right: 15%;
+  }
+}
+
+/* ── Títol principal (amarillo) ── */
+.enviament-titulo-principal {
+  color: #FFC721;
+  font-weight: 700;
+  font-size: 25px;
+  margin-bottom: 20px;
+  display: none;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .enviament-titulo-principal {
+      font-weight: 800;
+      font-size: 30px;
+      display: block;
+  }
+}
+
+/* ── Header grid (titles + intro text | intro image) ── */
+.enviament-header-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+  .enviament-header-grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: 2rem;
+  }
+}
+
+.enviament-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .enviament-header-box {
-  border: 4px solid #D3133A;
-  padding: 2rem;
-  background-color: #FFFFFF;
+  text-align: center;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  max-width: 500px;
-  margin: 0 auto;
+  gap: 0.5rem;
 }
 
 .enviament-titol-1 {
-  font-weight: 800;
+  font-weight: 600;
   font-size: 1.5rem;
   color: #000000;
   line-height: 1.2;
 }
 
+@media (min-width: 768px) {
+  .enviament-titol-1 {
+    font-size: 1.75rem;
+  }
+}
+
 .enviament-titol-2 {
-  font-weight: 800;
+  font-weight: 600;
   font-size: 1.25rem;
   color: #FFC721;
-  margin-top: 0.5rem;
   font-style: italic;
 }
 
-.enviament-titol-3 {
-  font-weight: 700;
-  font-size: 1rem;
-  color: #000000;
-  margin-top: 0.75rem;
+@media (min-width: 768px) {
+  .enviament-titol-2 {
+    font-size: 1.5rem;
+  }
 }
 
+.enviament-titol-3 {
+  font-weight: 500;
+  font-size: 1rem;
+  color: #000000;
+}
+
+@media (min-width: 768px) {
+  .enviament-titol-3 {
+    font-size: 1.125rem;
+  }
+}
+
+.enviament-header-text p {
+  font-size: 1rem;
+  line-height: 1.7;
+  text-align: justify;
+}
+
+.enviament-header-right img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 4px;
+}
+
+/* ── Content root ── */
 .enviament-content {
   font-size: 1rem;
   line-height: 1.6;
   color: #000000;
 }
 
-.enviament-content p {
-  margin-bottom: 1.25rem;
-}
-
-.enviament-content ul {
-  list-style: disc;
-  padding-left: 1.5rem;
-  margin-bottom: 1.25rem;
-}
-
-.enviament-content li {
-  margin-bottom: 0.5rem;
-}
-
-.enviament-content h2, .enviament-content h3 {
-  font-weight: 700;
-  color: #FFC721;
-  margin-top: 2rem;
-  margin-bottom: 0.75rem;
-  font-size: 1.25rem;
-}
-
 .enviament-content strong {
   font-weight: 700;
 }
 
-.enviament-button-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 3rem;
-  margin-bottom: 2rem;
+.enviament-content ul {
+  list-style: disc;
+  padding-left: 1rem;
 }
 
-.enviament-button {
-  background-color: #F57E26;
-  color: #FFFFFF;
-  font-weight: 800;
-  padding: 1rem 2.5rem;
-  border-radius: 5px;
-  text-transform: uppercase;
-  font-size: 1.25rem;
-  transition: all 0.2s ease-in-out;
-  border: 4px solid #D3133A; /* Red border like in the screenshot annotation? No, probably just orange */
-}
-
-.enviament-button:hover {
-  transform: scale(1.05);
-  filter: brightness(1.1);
+/* ── Section pair (2-column grid) ── */
+.enviament-section-pair {
+  display: grid;
+  grid-template-columns: 1fr;
 }
 
 @media (min-width: 768px) {
-  .enviament-titulo-principal {
-    font-size: 2.5rem;
-  }
-  
-  .enviament-header-section {
-    display: grid;
+  .enviament-section-pair {
     grid-template-columns: 1fr 1fr;
     gap: 2rem;
-    align-items: center;
-    margin-bottom: 3rem;
   }
+}
+
+/* ── Generic section ── */
+.enviament-section {
+  background-color: #FFFFFF;
+}
+
+.enviament-section-heading p {
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .enviament-section-heading p {
+    font-size: 1.5rem;
+  }
+}
+
+.enviament-section-body p {
+  text-align: justify;
+}
+
+/* ── Image full width (Alma-27 standalone) ── */
+.enviament-image-full {
+  margin: 2rem auto;
+}
+
+.enviament-image-full figure {
+  margin: 0;
+}
+
+.enviament-image-full img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 4px;
+}
+
+/* ── Fases detail (inside pair2) ── */
+.enviament-fases-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.enviament-fases-detall {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .enviament-fases-detall {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.enviament-fase-title p {
+  font-weight: 800;
+  font-size: 1.125rem;
+  margin-bottom: 0.25rem;
+  color: #000000;
+}
+
+.enviament-fase-date p {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #FFC721;
+  margin-bottom: 0.5rem;
+}
+
+.enviament-fase-desc p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 0;
+  text-align: justify;
+}
+@media (min-width: 768px) {
+  .enviament-fase-desc p {
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* ── Right section wrapper (inside pair2) ── */
+.enviament-section-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+/* ── Gray background div (contacto + EDICIÓ) ── */
+.enviament-gray-bg {
+  background-color: #f2f2f2;
+  padding: 1rem;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border: 1px solid #ffc721;
+}
+
+.enviament-gray-bg p {
+  text-align: left;
+}
+
+.enviament-gray-bg p:last-child {
+  margin-bottom: 0;
+}
+.enviament-gray-bg ul{
+  padding-left: 0rem;
+  list-style: none;
+  margin-bottom: 1rem;
+}
+/* ── Button ── */
+.enviament-button-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.enviament-button {
+  background-color: #ffc721;
+  width: 100%;
+  text-align: center;
+  color: white;
+  padding: 1rem 0.5rem;
+  font-weight: 700;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-radius: 1.875rem;
+  text-decoration: none;
 }

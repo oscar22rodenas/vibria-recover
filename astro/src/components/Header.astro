@@ -14,6 +14,7 @@ const imageAlt = headerData.imageAlt || "Logo Vibria";
 const contacteLink = headerLinks.find(link => link.slug.includes('contacte'));
 const assessoriesLink = headerLinks.find(link => link.slug.includes('assessories'));
 const tiendaLink = headerLinks.find(link => link.slug.includes('tienda'));
+const voluntariLink = headerLinks.find(link => link.slug.includes('voluntari') || link.title.toLowerCase().includes('voluntari'));
 
 const currentPath = Astro.url.pathname;
 const isInAssessories = assessoriesLink && currentPath.includes(assessoriesLink.slug.replace(/^\//, ''));
@@ -123,9 +124,9 @@ const sectionsToRender = categories.parent?.length > 0
       ))}
     </div>
     
-    <div class="bg-yellow text-white text-center font-bold text-lg py-2">
-      Sigues voluntari/a local
-    </div>
+    <a href={voluntariLink?.slug || "#"} class="bg-yellow text-white text-center font-bold text-lg py-2 block">
+      {voluntariLink?.title || "Sigues voluntari/a local"}
+    </a>
     
     <RRSS rrssData={rrssData} />
   </div>
@@ -140,6 +141,9 @@ const sectionsToRender = categories.parent?.length > 0
     </a>
 
     <div class="flex items-center gap-2 lg:gap-4">
+        <a class="text-yellow text-base font-500 px-2 py-0.5" href={voluntariLink?.slug || "#"}>
+            {voluntariLink?.title || "Sigues voluntari/a local"}
+        </a>
         <a
             class={`text-base font-700 px-2 py-0.5 border border-white rounded-full ${isInAssessories ? 'bg-white text-primary' : 'text-white bg-transparent'}`}
             href={assessoriesLink?.slug || "#"}

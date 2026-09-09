@@ -1,0 +1,104 @@
+---
+import { Picture } from "astro:assets";
+import CategoryNav from "@components/CategoryNav.astro";
+import "@styles/formacio-content.css";
+
+const { lang, slug } = Astro.params;
+const { globalData, pageData, detailedData } = Astro.props;
+
+const formacio = detailedData;
+const { categories } = globalData;
+---
+
+<CategoryNav lang={lang} slug={slug} categories={categories} />
+
+<article class="mx-auto bg-white p-4 space-y-4 md:px-12 lg:px-16 xl:px-20 md:mx-[15%]">
+  <h1 class="text-2xl font-700 text-[#81aef6] text-center md:text-3xl">{formacio.title}</h1>
+
+  <div class="md:columns-2 md:gap-8">
+    {formacio.imageUrl && <Picture
+      formats={["webp", "avif", "jpeg"]}
+      src={formacio.imageUrl}
+      alt={formacio.imageAlt}
+      width="300"
+      height="118"
+      class="mx-auto w-full h-auto"
+    />}
+
+    <div class="flex items-center gap-2 text-sm mt-2">
+      <Picture
+        formats={["webp", "avif", "jpeg"]}
+        src="/iconos/Ubicacion_Azul.png"
+        alt="Ubicacion Icon"
+        width="24"
+        height="24"
+      />
+      <span class="text-black font-600">{formacio.ubicacion}</span>
+    </div>
+
+    <div class="flex items-center gap-2 text-sm mt-2">
+      <Picture
+        formats={["webp", "avif", "jpeg"]}
+        src="/iconos/Reloj_Arena_Azul.png"
+        alt="Tiempo Icon"
+        width="24"
+        height="24"
+      />
+      <span class="text-black font-600">{formacio.fechas}</span>
+    </div>
+
+    <div class="formacio-content" set:html={pageData.content} />
+  </div>
+  <div class="flex items-center justify-center mt-4">
+    <a
+      href={formacio.buttonUrl}
+      class="bg-[#81aef6] text-white font-700 py-1 px-2 before:text-center rounded-3xl shadow-[0_2px_4px_0_px_rgba(0,0,0,0.25)]"
+    >
+      {formacio.buttonText}
+    </a>
+  </div>
+</article>
+
+<script>
+  function setupContentLinks() {
+    const content = document.querySelector('.formacio-content');
+    if (!content) return;
+
+    const wpBlockGroup = content.querySelector('.wp-block-group');
+    if (wpBlockGroup) {
+      const firstLi = wpBlockGroup.querySelector('ol.wp-block-list > li:first-child');
+      if (firstLi) {
+        const strong = firstLi.querySelector('strong');
+        if (strong && !strong.querySelector('a')) {
+          const link = document.createElement('a');
+          link.href = 'https://youth.europa.eu/solidarity/young-people/volunteering_es';
+          link.target = '_blank';
+          link.className = 'text-red font-600 underline';
+          link.textContent = strong.textContent;
+          strong.replaceWith(link);
+        }
+      }
+    }
+
+    const allParagraphs = content.querySelectorAll('p > strong');
+    allParagraphs.forEach(strong => {
+      const parent = strong.parentElement;
+      const nextSibling = parent?.nextElementSibling;
+      
+      if (nextSibling && nextSibling.classList.contains('wp-block-group') && !strong.querySelector('a')) {
+        const link = document.createElement('a');
+        link.href = '/pdfs/infopack.pdf';
+        link.download = 'infopack.pdf';
+        link.className = 'text-red font-600 underline cursor-pointer';
+        link.textContent = strong.textContent;
+        strong.replaceWith(link);
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupContentLinks);
+  } else {
+    setupContentLinks();
+  }
+</script>

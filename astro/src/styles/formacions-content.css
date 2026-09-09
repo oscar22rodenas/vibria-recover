@@ -1,4 +1,4 @@
-.experiencies-content {
+.formacions-content {
     font-size: 0.875rem;
     line-height: 1.5;
     display: flex;
@@ -9,11 +9,11 @@
     gap: 1rem;
 }
 
-.experiencies-content h2 {
+.formacions-content h2 {
     font-weight: 700;
     font-size: 25px;
     line-height: 36px;
-    color: #81aef6;
+    color: #D3133A;
     text-align: center;
     display: none;
 
@@ -24,7 +24,7 @@
     }
 }
 
-.experiencies-content p {
+.formacions-content p {
     margin-bottom: 0.75rem;
     font-weight: 600;
     text-align: justify;
@@ -32,6 +32,5 @@
     @media (min-width: 768px) {
         font-size: 1rem;
         font-weight: 500;
-        text-align: center;
     }
 }
